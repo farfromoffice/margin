@@ -76,9 +76,41 @@ The usable radio rate is set well below the vendor's gross maximum (UHF 9.6 of 1
 | LEO 400 km orbital period | ~92 min | 92.6 min | GMAT, `T = 2π√(a³/μ)` |
 | LEO 400 km eclipse fraction | ~35 to 40 % | 38.3 % | GMAT |
 | SSO 550 km eclipse fraction, LTAN 10:30 | ~35 % | 35.9 % | GMAT |
+| SSO 550 km orbital period | 95.6 min | 95.6 min | `T = 2π√(a³/μ)` |
+| SSO 700 km orbital period | 98.8 min | 98.8 min | `T = 2π√(a³/μ)` |
+| Contact per day, SSO 550 (Svalbard / Fairbanks / Wallops) | 4636 / 2500 / 1347 s | 4636 / 2500 / 1347 s | GMAT case table above, 7 day window tiled |
+| Reference design energy per orbit, SSO 550 | +19.9 Wh: 27.5 Wh in over 3679 s of sun, 7.6 Wh out | +19.9 Wh | hand calculation from `SimInput` loads |
+| Reference design data generated in 30 days | 1 Mbit/s × 20 % × 30 d = 64,800 MB | 64,800 MB | hand calculation |
 | Data bookkeeping | generated = delivered + discarded + stored | holds every step | `tests/test_simulator.gd` |
-| Solar flux at Mars vs Earth | ~43 % | | inverse square law |
-| Delta-v for a sample stage | hand calculation | | Tsiolkovsky |
+
+The reference design is the one in `tests/test_wildfire_watch.gd`: 6U, 6U deployable array, 43 Wh battery, S-band, thermal camera at 20 %, Svalbard and Fairbanks, rideshare to SSO 550.
+
+### Balance pass (Wildfire Watch)
+
+`tools/balance.gd` flies every design that passes the launch check: each structure, solar array, battery, radio and pointing system, each camera at 10, 25, 50 and 100 % time, every set of ground stations, every launcher and orbit pair. No failures and nobody at the controls, so it measures the design alone. 12,096 designs, goal 100,000 MB sent home in 30 days.
+
+| | Designs | Meet the goal | Cheapest that meets it |
+|---|---|---|---|
+| All | 12,096 | 26 % | 252 kUSD: thermal, X-band, free ISS launch, 100 % |
+| UHF radio | 4,032 | 0 % | |
+| S-band radio | 4,032 | 14 % | 567 kUSD: thermal, rideshare SSO 550, all three stations, 100 % |
+| X-band radio | 4,032 | 63 % | 252 kUSD |
+| Thermal camera | 4,032 | 16 % | 252 kUSD |
+| Multispectral camera | 4,032 | 33 % | 282 kUSD: X-band, ISS launch, 25 % |
+| Fire detection camera | 4,032 | 29 % | 532 kUSD: X-band, ISS launch, 25 % |
+| LEO 400 (ISS launch) | 6,048 | 15 % | 252 kUSD |
+| SSO 550 (rideshare) | 6,048 | 37 % | |
+
+The reference design misses the goal at 10 % and 25 % camera time (32,342 and 80,856 MB) and meets it at 50 % (133,440 MB, downlink limited).
+
+What the sweep says, as input for the playtest:
+
+- **The budget never binds.** The most expensive launchable design costs 953 kUSD against a 1,000 kUSD budget, and the cheapest winner spends a quarter of it. Every cost is fictional, so this is the knob to turn if budget should matter.
+- **No design is ever lost.** Safe mode always catches the battery before zero, so power costs science but never the spacecraft. Losses only come from live failures.
+- **The structure changes nothing in flight.** 3U and 6U give the same results; mass stays under 12 kg either way and `max_payload_kg` is not checked.
+- **SSO 700 is out of reach.** Only the dedicated launcher flies there, at 7,500 kUSD.
+- **The UHF radio never wins**, which is the intended lesson: 9.6 kbit/s cannot move pictures.
+- Raising the goal makes the budget bind (above about 256,000 MB the free ISS launch cannot deliver enough), but it also rules out S-band, which the current goal keeps on purpose (DESIGN.md open question 6). The goal stays at 100,000 MB.
 
 ## References
 
