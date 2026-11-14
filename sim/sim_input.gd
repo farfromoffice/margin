@@ -4,6 +4,8 @@ extends RefCounted
 ## Build it with from_design(), or fill the fields by hand in tests.
 
 const DT_S := 60.0
+## without a pointing system the camera faces the ground only part of the time.
+const UNPOINTED_SHARE := 0.25
 
 var duration_s := 0.0
 var dt_s := DT_S
@@ -11,7 +13,10 @@ var solar_power_w := 0.0
 var bus_power_w := 0.0
 var bus_safe_power_w := 0.0
 var instrument_power_w := 0.0
+## useful pictures only, already cut to UNPOINTED_SHARE when nothing points the camera
 var instrument_rate_bps := 0.0
+## false when the design flies without a pointing system
+var pointed := true
 var duty_cycle := 1.0
 var radio_tx_power_w := 0.0
 var radio_idle_power_w := 0.0
@@ -30,6 +35,7 @@ static func from_design(design: MissionDesign, scenario: Scenario, catalog: Obje
 	s.duration_s = scenario.duration_s
 	s.duty_cycle = clampf(design.instrument_duty_cycle, 0.0, 1.0)
 	var battery_seen := false
+	s.pointed = false
 	for id in design.component_ids:
 		var c: Dictionary = catalog.get_entry("components", id)
 		if c.is_empty():
@@ -59,5 +65,9 @@ static func from_design(design: MissionDesign, scenario: Scenario, catalog: Obje
 						s.safe_exit_fraction = float(c.get("safe_exit_fraction", 0.0))
 				elif c.get("category") == "obc":
 					s.storage_capacity_bits += float(c.get("storage_bits", 0.0))
+				elif c.get("category") == "adcs":
+					s.pointed = true
+	if not s.pointed:
+		s.instrument_rate_bps *= UNPOINTED_SHARE
 	s.initial_energy_j = s.battery_capacity_j
 	return s

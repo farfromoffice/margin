@@ -7,6 +7,8 @@ extends SceneTree
 ## The full sweep takes most of an hour on one core. Pass a shard to split it,
 ## e.g. `-- 3/12` runs every twelfth design starting at the fourth; the header
 ## only comes out of shard 0.
+## `-- count` flies nothing and prints how many candidate designs each launch check
+## rules out, one design per camera setting, overlaps counted for every check.
 
 const SCENARIO := &"wildfire_watch"
 const DUTIES: Array[float] = [0.1, 0.25, 0.5, 1.0]
@@ -15,6 +17,9 @@ var _started := false
 var _shard := 0
 var _shards := 1
 var _n := 0
+var _count := false
+## launch check kind (or "launchable") -> designs, for -- count
+var _tally := {}
 
 
 func _process(_delta: float) -> bool:
@@ -23,6 +28,7 @@ func _process(_delta: float) -> bool:
 		return true
 	_started = true
 	var args := OS.get_cmdline_user_args()
+	_count = args.has("count")
 	if not args.is_empty() and args[0].contains("/"):
 		var parts := args[0].split("/")
 		_shards = maxi(1, parts[1].to_int())
@@ -34,7 +40,7 @@ func _process(_delta: float) -> bool:
 func _sweep(catalog: Node) -> void:
 	var scenario: Scenario = catalog.get_scenario(SCENARIO)
 	var stations := _subsets(catalog.all("ground_stations").map(func(g): return StringName(g["id"])))
-	if _shard == 0:
+	if _shard == 0 and not _count:
 		print("structure,solar,battery,radio,adcs,camera,stations,launcher,orbit,duty,cost_kusd,mass_kg,end,delivered_mb,discarded_mb,missed_mb,safe_h,factors,goal")
 	for structure in _ids(catalog, "structure"):
 		for solar in _ids(catalog, "solar"):
@@ -62,7 +68,22 @@ func _sweep(catalog: Node) -> void:
 											if _n % _shards != _shard:
 												continue
 											_fly(d, scenario, catalog)
+	if _count:
+		for k in _tally:
+			print("%s,%d" % [k, _tally[k]])
 	quit()
+
+
+## _add counts a candidate once under each distinct check it fails or as launchable.
+func _add(violations: Array[Dictionary]) -> void:
+	var kinds := {}
+	for v in violations:
+		kinds[String(v["kind"])] = true
+	if kinds.is_empty():
+		kinds["launchable"] = true
+	kinds["candidates"] = true
+	for k in kinds:
+		_tally[k] = _tally.get(k, 0) + 1
 
 
 func _fly(d: MissionDesign, scenario: Scenario, catalog: Node) -> void:

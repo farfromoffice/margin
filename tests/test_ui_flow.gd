@@ -174,6 +174,7 @@ func test_report_blames_a_downlink_limit_on_the_design() -> void:
 	var texts: Array = await _report_lines()
 	assert_true(texts.any(func(t): return t.begins_with("Downlink:") and "minutes over the ground stations" in t), "explained with the pass time")
 	assert_true(texts.any(func(t): return "comes from the design" in t))
+	assert_has(texts, "Mission complete, goal met")
 
 
 func test_report_blames_a_limit_on_the_changes_in_flight() -> void:
@@ -183,6 +184,7 @@ func test_report_blames_a_limit_on_the_changes_in_flight() -> void:
 	var texts: Array = await _report_lines()
 	assert_true(texts.any(func(t): return t.begins_with("Memory:")), "a silent radio fills the memory")
 	assert_true(texts.any(func(t): return "came from the changes in flight" in t), "the design alone was fine")
+	assert_has(texts, "Mission complete, goal missed", "surviving is not meeting the goal")
 
 
 func test_picking_a_part_replaces_the_old_one() -> void:

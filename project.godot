@@ -13,10 +13,10 @@ config_version=5
 config/name="Margin"
 config/description="A space mission design game. Every gram counts."
 run/main_scene="res://scenes/splash.tscn"
-config/icon="res://ui/brand/app_icon.png"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 boot_splash/bg_color=Color(0, 0, 0, 1)
 boot_splash/show_image=false
+config/icon="res://ui/brand/app_icon.png"
 
 [autoload]
 

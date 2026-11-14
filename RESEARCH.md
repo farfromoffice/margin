@@ -52,6 +52,8 @@ Safe mode thresholds (enter at 30 %, leave at 60 % state of charge) are teaching
 
 The instrument produces `data_rate_bps × duty_cycle` on average every step in Normal mode. Downlink empties storage at `rate_bps` while in contact. Data over the storage limit is discarded. `generated = delivered + discarded + stored` is checked every step in debug builds and in the tests. Instrument data rates are our estimates (vendors publish sensor format, not stream rates).
 
+Without a pointing system only `SimInput.UNPOINTED_SHARE` = 25 % of the camera's data counts, while it still draws full power. This is a gameplay approximation, not a measured number: a CubeSat without wheels settles along the magnetic field or tumbles, and a camera fixed to the body sweeps past the ground for part of each orbit. The real share depends on the orbit and the stabilisation. Both pointing systems count as full pointing; the model does not tell their accuracy apart.
+
 ### Launch check and warnings (`sim/launch_check.gd`, `sim/warnings.gd`)
 
 Mass and budget are plain sums. Budget counts hardware and launcher, not ground station passes (DESIGN.md open question 5). Warnings use orbit averages in Normal mode and do not model Safe mode.

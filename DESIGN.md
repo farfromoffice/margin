@@ -259,6 +259,7 @@ Computed before the run from `SimInput` and the timeline. The prediction screen 
 | `orbit_energy_negative` | Normal-mode energy over one orbit at the given eclipse fraction is negative, using average contact time per orbit |
 | `downlink_short` | data generated per day > `downlink_rate_bps` × average contact seconds per day |
 | `storage_fills` | backlog per day > 0 and storage fills before mission end; `value` is the fill time in s |
+| `camera_unpointed` | the design has a camera and no pointing system; `value` is `SimInput.UNPOINTED_SHARE` |
 
 ## Code layout
 

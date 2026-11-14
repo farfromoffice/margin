@@ -120,6 +120,18 @@ func test_sim_input_resolves_to_si() -> void:
 	assert_eq(s.initial_energy_j, s.battery_capacity_j)
 
 
+func test_camera_without_a_pointing_system_keeps_a_share_of_its_pictures() -> void:
+	var d := _design()
+	d.component_ids.erase(&"wheels")
+	var s := SimInput.from_design(d, _scenario(), _catalog())
+	assert_false(s.pointed)
+	assert_almost_eq(s.instrument_rate_bps, 1.0e6 * SimInput.UNPOINTED_SHARE, 1e-6)
+	assert_almost_eq(s.bus_power_w, 1.0, 1e-9, "the wheels' power is gone too")
+	var t := OrbitTimeline.build({"altitude_m": 550000.0, "eclipse_fraction": 0.36, "reference_duration_s": 86400.0, "contacts_s": {"gs": [[0.0, 60.0]]}}, [&"gs"], s.duration_s)
+	assert_has(_kinds(Warnings.compute(s, t)), &"camera_unpointed")
+	assert_does_not_have(_kinds(Warnings.compute(SimInput.from_design(_design(), _scenario(), _catalog()), t)), &"camera_unpointed")
+
+
 func test_warnings_flag_starved_power_and_downlink() -> void:
 	var s := SimInput.from_design(_design(), _scenario(), _catalog())
 	var orbit := {"altitude_m": 550000.0, "eclipse_fraction": 0.36, "reference_duration_s": 86400.0, "contacts_s": {"gs": [[0.0, 60.0]]}}

@@ -16,11 +16,18 @@ func _ready() -> void:
 	scroll.add_child(col)
 
 	col.add_child(UiStyle.section("MISSION REPORT", "satellite", 14, UiStyle.CYAN))
+	var goals := Outcome.objectives(s, r)
+	var met := goals.all(func(row): return row["met"])
+	# the title says both what happened to the craft and to the goal, a craft that
+	# survives the 30 days can still miss it
 	if r.end_reason == RunResult.EndReason.POWER_LOST:
 		col.add_child(_title("Mission lost on day %d" % (int(r.end_t_s / 86400.0) + 1), UiStyle.BAD))
+	elif goals.is_empty():
+		col.add_child(_title("Mission complete, no goal set", UiStyle.GOOD))
+	elif met:
+		col.add_child(_title("Mission complete, goal met", UiStyle.GOOD))
 	else:
-		col.add_child(_title("Mission complete", UiStyle.GOOD))
-	var met := Outcome.objectives(s, r).all(func(row): return row["met"])
+		col.add_child(_title("Mission complete, goal missed", UiStyle.WARN))
 	Sfx.play(&"goal_met" if met and r.end_reason != RunResult.EndReason.POWER_LOST else &"goal_missed")
 
 	var grid := UiStyle.hbox(16)

@@ -114,6 +114,8 @@ static func warning(w: Dictionary) -> String:
 			return "The camera makes %s a day, the radio can send %s." % [mb(w["value"]), mb(w["limit"])]
 		&"storage_fills":
 			return "Memory fills up after %s." % days(w["value"])
+		&"camera_unpointed":
+			return "No pointing system: the camera faces the ground only about %d %% of the time, only that share of its pictures count." % roundi(100.0 * float(w["value"]))
 	return str(w["kind"])
 
 

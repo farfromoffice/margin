@@ -12,6 +12,8 @@ const DUTY_STEP := 0.05
 
 static func compute(input: SimInput, timeline: OrbitTimeline) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
+	if not input.pointed and input.instrument_rate_bps > 0.0:
+		out.append(_w(&"camera_unpointed", SimInput.UNPOINTED_SHARE, 1.0, ""))
 	if timeline.period_s > 0.0:
 		var net := orbit_energy_j(input, timeline)
 		if net < 0.0:

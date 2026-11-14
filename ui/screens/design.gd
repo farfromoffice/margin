@@ -103,7 +103,7 @@ func _category_picker(cat: String) -> Control:
 				_pick(cat, &""))
 		box.add_child(b)
 	if cat in OPTIONAL:
-		box.add_child(UiStyle.label("Optional, click again to remove.", 14, UiStyle.MUTED))
+		box.add_child(UiStyle.label("Optional, click again to remove. Without one the camera faces the ground only about %d %% of the time." % roundi(100.0 * SimInput.UNPOINTED_SHARE), 14, UiStyle.MUTED, true))
 	return box
 
 
