@@ -37,8 +37,8 @@ Hackathon: 14 to 15 November 2026, 48 hours. Hours count from kickoff.
 
 Only after Phase 2 works end to end.
 
-- [ ] Balance pass, validation table in RESEARCH.md
-- [ ] Design comparison (two runs side by side)
+- [x] Balance pass, validation table in RESEARCH.md
+- [x] Design comparison (two runs side by side)
 - [ ] Optional: local role-based play at one screen
 - [ ] Optional: further scenarios, sandbox
 - [x] 3D spacecraft preview on the design screen, built from the chosen parts

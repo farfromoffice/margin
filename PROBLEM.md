@@ -51,7 +51,7 @@ Status: ✅ done, 🟡 in progress, ❌ not started, ⏭ out of scope for the ha
 | Real time resource dashboard | Simulation screen gauges | ✅ |
 | Leaderboard | Local leaderboard | ❌ |
 | End of mission report | Report screen | ✅ |
-| Save, share, compare designs | JSON export/import, Trade Study screen | ❌ |
+| Save, share, compare designs | Report compares the last two flights side by side. JSON export/import still open | 🟡 |
 | Cooperative missions | Four role local co-op | ❌ |
 | Competitive scenarios | Two teams, same scenario, scores side by side | ⏭ stretch |
 | Sandbox mode | Sandbox scenario with no constraints | ❌ |

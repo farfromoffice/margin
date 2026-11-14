@@ -39,6 +39,8 @@ func _ready() -> void:
 		var lines: Array = failures.map(func(l): return [l, UiStyle.WARN])
 		lines.append(["The comparison below flies the same failures with nobody at the controls.", UiStyle.MUTED])
 		col.add_child(_card("Failures in flight", lines, "chip"))
+	if GameState.previous_result and GameState.previous_design:
+		col.add_child(_comparison(GameState.previous_design, GameState.previous_result, GameState.last_design, r, s))
 	if GameState.baseline_result:
 		col.add_child(_card("Design vs. operations", _operations_lines(r, GameState.baseline_result, s), "camera"))
 	if not GameState.last_warnings.is_empty():
@@ -146,6 +148,83 @@ func _operations_lines(r: RunResult, base: RunResult, s: Scenario) -> Array:
 				else "The design alone would have met the goal; your changes made it miss."
 		out.append([text, UiStyle.GOOD if met["operated"] else UiStyle.BAD])
 	return out
+
+
+## Last flight and this one side by side, one row per choice and per result.
+## Rows that differ are lit, so the player sees what the redesign changed and
+## what that bought.
+func _comparison(before: MissionDesign, prev: RunResult, after: MissionDesign, r: RunResult, s: Scenario) -> PanelContainer:
+	var box := UiStyle.vbox(8)
+	box.add_child(UiStyle.section("Last flight vs. this flight", "orbit"))
+	var rows := DesignCompare.rows(before, after, Catalog)
+	var n := DesignCompare.changed_count(rows)
+	box.add_child(UiStyle.label("Same design flown again." if n == 0 else "%d choice%s changed." % [n, "" if n == 1 else "s"], 16, UiStyle.MUTED))
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 18)
+	grid.add_theme_constant_override("v_separation", 4)
+	for text in ["", "Last flight", "This flight"]:
+		grid.add_child(UiStyle.label(text, 15, UiStyle.ACCENT))
+	for row in rows:
+		var lit := UiStyle.CYAN if row["changed"] else UiStyle.TEXT
+		_grid_row(grid, _row_name(row["key"]), _row_value(row["key"], row["before"]), _row_value(row["key"], row["after"]), UiStyle.TEXT if row["changed"] else UiStyle.MUTED, lit)
+
+	var cmp := Outcome.compare_runs(r, prev, s)
+	for key in ["delivered_bits", "discarded_bits", "safe_time_s"]:
+		var m: Dictionary = cmp[key]
+		# more data sent is good, more thrown away or more Safe time is bad
+		var better: bool = (m["verdict"] == &"more") == (key == "delivered_bits")
+		var color := UiStyle.MUTED if m["verdict"] == &"same" else (UiStyle.GOOD if better else UiStyle.BAD)
+		var title: String = {"delivered_bits": "Sent home", "discarded_bits": "Thrown away", "safe_time_s": "Safe mode"}[key]
+		if key == "safe_time_s":
+			_grid_row(grid, title, Explain.days(m["baseline"]), Explain.days(m["operated"]), UiStyle.TEXT, color)
+		else:
+			_grid_row(grid, title, Explain.mb(m["baseline"]), Explain.mb(m["operated"]), UiStyle.TEXT, color)
+	for key in ["completed", "objectives_met"]:
+		var pair: Dictionary = cmp[key]
+		var words: Array = ["Finished", "Lost"] if key == "completed" else ["Met", "Not met"]
+		var color := UiStyle.MUTED if pair["operated"] == pair["baseline"] else (UiStyle.GOOD if pair["operated"] else UiStyle.BAD)
+		_grid_row(grid, "Mission" if key == "completed" else "Goal", words[0] if pair["baseline"] else words[1], words[0] if pair["operated"] else words[1], UiStyle.TEXT, color)
+	box.add_child(grid)
+	var p := UiStyle.panel(box)
+	p.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	return p
+
+
+func _grid_row(grid: GridContainer, title: String, before: String, after: String, before_color: Color, after_color: Color) -> void:
+	grid.add_child(UiStyle.label(title, 15, UiStyle.MUTED))
+	grid.add_child(UiStyle.label(before, 15, before_color))
+	grid.add_child(UiStyle.label(after, 15, after_color))
+
+
+func _row_name(key: String) -> String:
+	match key:
+		"orbit":
+			return "Orbit"
+		"launcher":
+			return "Launcher"
+		"ground_station":
+			return "Ground stations"
+		"duty_cycle":
+			return "Camera time"
+		"mass_kg":
+			return "Mass"
+		"cost_kusd":
+			return "Cost"
+	return Explain.category(key).capitalize()
+
+
+func _row_value(key: String, v: Variant) -> String:
+	match key:
+		"ground_station":
+			return ", ".join(v) if not v.is_empty() else "none"
+		"duty_cycle":
+			return "%d %%" % roundi(100.0 * v)
+		"mass_kg":
+			return Explain.kg(v)
+		"cost_kusd":
+			return Explain.kusd(v)
+	return v if v != "" else "none"
 
 
 func _prediction_lines(actual: Array[StringName]) -> Array:

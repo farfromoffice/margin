@@ -119,6 +119,22 @@ func test_in_flight_change_reaches_the_report() -> void:
 	assert_true(texts.any(func(t): return t.contains("left alone")), "and compared with the untouched design")
 
 
+func test_second_flight_compares_with_the_first() -> void:
+	var run: Control = await _launch()
+	run._finish_now()
+	assert_null(GameState.previous_design, "nothing to compare after one flight")
+	GameState.design.component_ids[2] = &"battery_100wh"
+	GameState.start_mission()
+	run = await _go(&"run")
+	run._finish_now()
+	assert_not_null(GameState.previous_design)
+	assert_has(GameState.previous_design.component_ids, &"battery_43wh", "the copy kept the old battery")
+	var report: Control = await _go(&"report")
+	var texts := report.find_children("*", "Label", true, false).map(func(l): return l.text)
+	assert_has(texts, "Last flight vs. this flight")
+	assert_has(texts, "1 choice changed.")
+
+
 func test_picking_a_part_replaces_the_old_one() -> void:
 	_reference_design()
 	var design: Control = await _go(&"design")
