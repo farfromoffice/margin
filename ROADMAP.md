@@ -9,7 +9,7 @@ Hackathon: 14 to 15 November 2026, 48 hours. Hours count from kickoff.
 - [x] Folder layout, autoloads (`Catalog`, `GameState`, `EventBus`)
 - [x] First data contracts: `MissionDesign`, `Scenario`, `DayState`
 - [x] GUT test runner
-- [ ] Empty Linux and Windows builds exported and launched on each
+- [x] Empty Linux and Windows builds exported and launched on each. (Windows is tested via Wine)
 
 ## Phase 1 · Core simulation (3 to 14 h)
 
