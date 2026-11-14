@@ -12,7 +12,7 @@ Download for Linux and Windows: _builds coming soon_
 2. Choose an instrument, solar array, battery, radio, ground stations, orbit and launcher. The game blocks launch if the mass, orbit or budget does not fit.
 3. Predict which constraints will limit the mission.
 4. Check the preflight numbers on the launch pad and watch the launch in 3D, from the pad to your spacecraft unfolding in orbit. The ascent is shown, not simulated.
-5. Fly the mission: change the camera on-time and the radio while it runs, and deal with failures as they happen (a power cycle clears a frozen radio or camera). Hardware, orbit and launcher are locked after launch.
+5. Fly the mission: change the camera on-time and the radio while it runs, and deal with failures as they happen (a restart clears a frozen radio or camera). Hardware, orbit and launcher are locked after launch.
 6. Read the report, change the design, try again.
 
 ## Development

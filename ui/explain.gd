@@ -241,11 +241,19 @@ static func _recovery_t(r: RunResult, kind: StringName, after_s: float) -> float
 	return -1.0
 
 
+## duty describes a camera duty cycle. Zero reads as off, since "on 0 % of the
+## time" made players look elsewhere for an off switch.
+static func duty(v: float) -> String:
+	if roundi(v * 100.0) <= 0:
+		return "Camera off"
+	return "Camera on %d %% of the time" % roundi(v * 100.0)
+
+
 static func command(c: Dictionary) -> String:
 	var what := ""
 	match c["control"]:
 		Controls.DUTY_CYCLE:
-			what = "camera on %d %% of the time" % roundi(float(c["value"]) * 100.0)
+			what = duty(float(c["value"])).to_lower()
 		Controls.RADIO_ENABLED:
 			what = "radio on" if c["value"] else "radio off"
 		_:

@@ -256,7 +256,7 @@ func _refresh() -> void:
 	var mass_limit := _mass_limit(launcher)
 	_mass.set_values(Explain.kg(totals["mass_kg"]), Explain.kg(mass_limit), totals["mass_kg"], mass_limit)
 	_cost.set_values(Explain.kusd(totals["cost_kusd"]), Explain.kusd(_scenario.budget_kusd), totals["cost_kusd"], _scenario.budget_kusd)
-	_duty_label.text = "Camera on %d %% of the time" % roundi(_design.instrument_duty_cycle * 100.0)
+	_duty_label.text = Explain.duty(_design.instrument_duty_cycle)
 
 	var input := SimInput.from_design(_design, _scenario, Catalog)
 	var timeline := OrbitTimeline.build(orbit, _design.ground_station_ids, input.duration_s)
