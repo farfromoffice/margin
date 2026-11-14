@@ -63,7 +63,9 @@ func daily() -> Array[DayState]:
 		prev_delivered = delivered_bits[last]
 		prev_discarded = discarded_bits[last]
 		var day_end_s := (last + 1) * dt_s
-		while ev < events.size() and float(events[ev]["t_s"]) < day_end_s:
+		# events are stamped at the end of their step, the day's last step
+		# lands exactly on day_end_s and still belongs to this day
+		while ev < events.size() and float(events[ev]["t_s"]) <= day_end_s:
 			d.events.append(events[ev])
 			ev += 1
 		out.append(d)

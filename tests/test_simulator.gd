@@ -135,6 +135,35 @@ func test_daily_summary_adds_up() -> void:
 	assert_eq(events, r.events.size())
 
 
+func test_event_in_last_step_of_day_stays_on_that_day() -> void:
+	var r := RunResult.new()
+	r.dt_s = 60.0
+	var steps := 2 * 1440
+	r.energy_j.resize(steps)
+	r.stored_bits.resize(steps)
+	r.delivered_bits.resize(steps)
+	r.discarded_bits.resize(steps)
+	r.mode.resize(steps)
+	r.events.append({"t_s": DAY_S, "kind": &"safe_enter", "energy_j": 0.0})
+	var days := r.daily()
+	assert_eq(days[0].events.size(), 1)
+	assert_eq(days[1].events.size(), 0)
+
+
+func test_power_lost_shows_up_in_daily_summary() -> void:
+	var input := _make_input(2.0)
+	input.solar_power_w = 0.0
+	var r := Simulator.run(input, _timeline(input))
+	assert_eq(r.end_reason, RunResult.EndReason.POWER_LOST)
+	var days := r.daily()
+	var last_events: Array = days.back().events.map(func(e): return e["kind"])
+	assert_has(last_events, &"power_lost")
+	var events := 0
+	for d in days:
+		events += d.events.size()
+	assert_eq(events, r.events.size())
+
+
 func test_thirty_days_runs_fast_enough() -> void:
 	var input := _make_input(30.0)
 	var start := Time.get_ticks_usec()
