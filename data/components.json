@@ -88,8 +88,9 @@
     "cost_kusd": 45.0,
     "generated_w_1au": 38.4,
     "sunlit_factor": 0.7,
+    "min_structure_u": 6,
     "model": "wings_single",
-    "source": "EnduroSat 6U deployable array, up to 38.4 W in LEO, 757 g single deployable https://www.endurosat.com/products/6u-deployable-solar-array/",
+    "source": "EnduroSat 6U deployable array, up to 38.4 W in LEO, 757 g single deployable, made for 6U structures https://www.endurosat.com/products/6u-deployable-solar-array/",
     "provenance": "documented",
     "provenance_fields": {
       "cost_kusd": "fictional",

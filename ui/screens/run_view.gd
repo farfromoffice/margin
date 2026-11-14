@@ -7,6 +7,9 @@ extends Control
 ## Speed of the craft in the orbit view in radians per real second. A real orbit
 ## takes 0.4 s at 1x and would blur. This pace stays readable.
 const ORBIT_VIEW_SPIN := 0.9
+## minimum chart height and the smaller one while the auto-pause panel is open
+const CHART_MIN := 100.0
+const CHART_MIN_DECIDING := 64.0
 
 var _mission: Mission
 var _clock: MissionClock
@@ -22,6 +25,23 @@ var _duty_label: Label
 var _duty_dragging := false
 var _radio: CheckButton
 var _forecast: Label
+var _duty_effect: Label
+var _radio_effect: Label
+var _goal: Label
+## goal in bits, 0 for a scenario without one (the sandbox)
+var _goal_bits := 0.0
+var _on_track := true
+## The auto-pause panel: the reason, what happens if nothing changes and the
+## options with their effects. The mission log hides while it is open.
+var _decision: PanelContainer
+var _decision_facts: Label
+var _decision_outlook: Label
+## reasons of the open auto-pause, kept to refresh the panel when a control changes
+var _fired: Array[StringName] = []
+var _options: HFlowContainer
+var _log_parts: Array[Control] = []
+## speed the clock goes back to after a decision
+var _last_speed := 1
 var _faults: Label
 var _cycle_radio: Button
 var _cycle_camera: Button
@@ -40,6 +60,7 @@ var _log_day := -1
 func _ready() -> void:
 	_mission = GameState.mission
 	_clock = MissionClock.new(_mission.input.dt_s)
+	_goal_bits = float(GameState.scenario().objectives.get(&"delivered_mb", 0.0)) * Outcome.BITS_PER_MB
 	var page := UiStyle.page(self, 20)
 	var row := UiStyle.hbox(16)
 	page.add_child(row)
@@ -56,18 +77,33 @@ func _build_main() -> Control:
 	var r := _mission.state.result
 	var left := UiStyle.vbox(10)
 	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var head := UiStyle.hbox(20)
-	head.add_child(UiStyle.section("%s  ·  Operations" % GameState.scenario().title, "satellite", 26))
+	var head := UiStyle.hbox(12)
+	head.add_child(UiStyle.section(GameState.scenario().title, "satellite", 26))
 	_day = UiStyle.label("", 20)
 	_mode = UiStyle.label("", 20)
 	_day.theme_type_variation = &"DisplayLabel"
 	_mode.theme_type_variation = &"DisplayLabel"
 	head.add_child(_day)
 	head.add_child(_mode)
+	_goal = UiStyle.label("", 20)
+	_goal.theme_type_variation = &"DisplayLabel"
+	_goal.visible = _goal_bits > 0.0
+	head.add_child(_goal)
 	left.add_child(head)
+	var box := UiStyle.vbox(8)
 	_banner = UiStyle.label("", 17, UiStyle.WARN, true)
-	left.add_child(UiStyle.panel(_banner))
-	_banner.get_parent().visible = false
+	box.add_child(_banner)
+	_decision_facts = UiStyle.label("", 15, UiStyle.TEXT, true)
+	box.add_child(_decision_facts)
+	_decision_outlook = UiStyle.label("", 15, UiStyle.TEXT, true)
+	box.add_child(_decision_outlook)
+	_options = HFlowContainer.new()
+	_options.add_theme_constant_override("h_separation", 8)
+	_options.add_theme_constant_override("v_separation", 8)
+	box.add_child(_options)
+	_decision = UiStyle.panel(box)
+	_decision.visible = false
+	left.add_child(_decision)
 
 	var battery := _chart("Battery", UiStyle.GOOD, input.battery_capacity_j,
 			func(v: float) -> String: return "%d %%" % roundi(100.0 * v / maxf(input.battery_capacity_j, 1.0)))
@@ -76,11 +112,17 @@ func _build_main() -> Control:
 	battery.threshold_label = "Safe mode below %d %%" % roundi(input.safe_enter_fraction * 100.0)
 	_chart("Memory used", UiStyle.WARN, input.storage_capacity_bits,
 			func(v: float) -> String: return "%d %%" % roundi(100.0 * v / maxf(input.storage_capacity_bits, 1.0)))
-	_chart("Data sent home", UiStyle.DATA, 1.0, func(v: float) -> String: return Explain.mb(v))
+	var sent := _chart("Data sent home", UiStyle.DATA, 1.0, func(v: float) -> String: return Explain.mb(v))
+	if _goal_bits > 0.0:
+		sent.threshold = _goal_bits
+		sent.threshold_label = "Goal %s" % Explain.mb(_goal_bits)
+		sent.threshold_color = UiStyle.ACCENT
 	for c in _charts:
 		left.add_child(c)
-	left.add_child(UiStyle.label("Red bands: Safe mode, the camera was off and the radio only listened.", 14, UiStyle.MUTED))
-	left.add_child(UiStyle.section("Mission log", "flag", 18))
+	var bands_note := UiStyle.label("Red bands: Safe mode, the camera was off and the radio only listened.", 14, UiStyle.MUTED)
+	left.add_child(bands_note)
+	var log_title := UiStyle.section("Mission log", "flag", 18)
+	left.add_child(log_title)
 	var scroll := ScrollContainer.new()
 	scroll.custom_minimum_size.y = 90
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -88,6 +130,7 @@ func _build_main() -> Control:
 	_log.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(_log)
 	left.add_child(scroll)
+	_log_parts = [bands_note, log_title, scroll]
 	return left
 
 
@@ -128,10 +171,12 @@ func _build_side() -> Control:
 	_duty = HSlider.new()
 	_duty.min_value = 0.0
 	_duty.max_value = 1.0
-	_duty.step = 0.05
+	_duty.step = Warnings.DUTY_STEP
 	_duty.value = _mission.controls.duty_cycle
 	_duty.value_changed.connect(func(v: float):
 		_duty_label.text = Explain.duty(v)
+		# while dragging, the lines below preview the value under the thumb
+		_show_effects(v)
 		if not _duty_dragging:
 			_set_control(Controls.DUTY_CYCLE, v))
 	# A drag passes many values on the way. Only the value where it ends is logged.
@@ -141,11 +186,17 @@ func _build_side() -> Control:
 		_set_control(Controls.DUTY_CYCLE, _duty.value))
 	_duty_label.text = Explain.duty(_duty.value)
 	body.add_child(_duty)
+	_duty_effect = UiStyle.label("", 14, UiStyle.MUTED, true)
+	_duty_effect.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.add_child(_duty_effect)
 	_radio = CheckButton.new()
 	_radio.text = "Radio sends data during passes"
 	_radio.button_pressed = _mission.controls.radio_enabled
 	_radio.toggled.connect(func(on: bool): _set_control(Controls.RADIO_ENABLED, on))
 	body.add_child(_radio)
+	_radio_effect = UiStyle.label("", 14, UiStyle.MUTED, true)
+	_radio_effect.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.add_child(_radio_effect)
 	body.add_child(UiStyle.section("Spacecraft health", "chip"))
 	_faults = UiStyle.label("", 15, UiStyle.TEXT, true)
 	_faults.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -205,19 +256,57 @@ func _set_speed(speed: int) -> void:
 	_clock.set_paused(speed == 0)
 	if speed > 0:
 		_clock.set_speed(speed)
-		_banner.get_parent().visible = false
+		_last_speed = speed
+		_show_decision(false)
 	# set_pressed_no_signal does not release the other buttons of the group.
 	for s in _speed_buttons:
 		_speed_buttons[s].set_pressed_no_signal(s == speed)
 
 
+## _set_control applies a change and logs it with what it does: the energy per
+## orbit and the projected data at home before and after.
 func _set_control(control: StringName, value: Variant) -> void:
 	var logged := _mission.state.result.commands.size()
+	var before := _outlook(_mission.controls)
 	_mission.set_control(control, value)
 	var commands := _mission.state.result.commands
 	if commands.size() > logged:
-		_log_line(Explain.command(commands.back()), UiStyle.CYAN)
+		var after := _outlook(_mission.controls)
+		_log_line("%s. %s" % [Explain.command(commands.back()), Explain.change(before, after, _goal_bits)], UiStyle.CYAN)
 		_update_forecast()
+		if _decision.visible:
+			_fill_decision()
+
+
+## _outlook returns {forecast, projected} for a set of controls, the numbers the
+## effect lines, the log and the auto pause options compare.
+func _outlook(c: Controls) -> Dictionary:
+	var f := Warnings.forecast(_mission.input, c, _mission.timeline, _mission.state)
+	return {"forecast": f, "projected": Warnings.projected_delivered_bits(_mission.input, _mission.timeline, c, _mission.state)}
+
+
+## _controls_with copies the current controls with one of them changed.
+func _controls_with(control: StringName, value: Variant) -> Controls:
+	var c := Controls.new()
+	c.duty_cycle = _mission.controls.duty_cycle
+	c.radio_enabled = _mission.controls.radio_enabled
+	c.apply(control, value)
+	return c
+
+
+## _show_effects fills the lines under the camera slider and the radio switch for
+## a camera time, the current one or the one under a dragged thumb.
+func _show_effects(duty: float) -> void:
+	if _mission.state.done:
+		_duty_effect.text = ""
+		_radio_effect.text = ""
+		return
+	var f := Warnings.forecast(_mission.input, _controls_with(Controls.DUTY_CYCLE, duty), _mission.timeline, _mission.state)
+	_duty_effect.text = Explain.power_effect(f)
+	_duty_effect.add_theme_color_override("font_color", UiStyle.GOOD if float(f["energy_per_orbit_j"]) >= 0.0 else UiStyle.WARN)
+	_radio_effect.text = Explain.data_effect(f)
+	var piles_up := float(f["generated_bits_per_day"]) > float(f["sendable_bits_per_day"])
+	_radio_effect.add_theme_color_override("font_color", UiStyle.WARN if piles_up else UiStyle.MUTED)
 
 
 ## Power cycles take one mission step, so they also work while paused: the
@@ -246,10 +335,64 @@ func _auto_paused(fired: Array[StringName]) -> void:
 		var alerts := _mission.state.failures_started.map(func(k): return Explain.failure_alert(k))
 		text = (" ".join(alerts) + " " + text).strip_edges()
 	_banner.text = "Paused, %s. %s" % [Explain.mission_time(_mission.state.t_s), text]
-	_banner.get_parent().visible = true
+	_fired = fired
+	_fill_decision()
+	_show_decision(true)
 	for f in fired:
 		_log_line("%s: paused, %s." % [Explain.mission_time(_mission.state.t_s), Explain.PAUSE_NAMES[f].to_lower()], UiStyle.WARN)
 	_update_forecast()
+
+
+## _fill_decision writes the panel for the open auto-pause with the controls as
+## they are now: the numbers behind the problem, where the mission ends up if
+## nothing else breaks, the repairs and switches that apply, and Resume. It runs
+## again whenever the player changes a control while paused, so trying a camera
+## time shows its outcome before the clock runs.
+func _fill_decision() -> void:
+	var now := _outlook(_mission.controls)
+	var facts := Explain.tradeoffs(_fired, now["forecast"], Warnings.camera_step(_mission.input, _mission.timeline))
+	_decision_facts.text = " ".join(facts)
+	_decision_facts.visible = not facts.is_empty()
+	var lines := [Explain.goal_outlook(now["projected"], _goal_bits)] + Explain.forecast(now["forecast"], _mission.state, true)
+	_decision_outlook.text = "With the settings as they are now, if nothing else breaks: " + ". ".join(lines) + "."
+	for child in _options.get_children():
+		_options.remove_child(child)
+		child.queue_free()
+	for c in Warnings.choices(_fired, _mission.input, _mission.timeline, _mission.controls, _mission.state):
+		_options.add_child(UiStyle.button("%s\n%s" % [Explain.choice(c), _choice_effect(c, now)], _choose.bind(c)))
+	_options.add_child(UiStyle.button("Resume\nwith the settings as they are", _resume))
+
+
+func _choice_effect(c: Dictionary, now: Dictionary) -> String:
+	if c["kind"] == &"restart":
+		return "off for a minute, then back on"
+	return Explain.choice_effect(now, _outlook(_controls_with(Controls.RADIO_ENABLED, c["value"])), _goal_bits)
+
+
+## _choose applies an auto-pause option and lets the clock run again.
+func _choose(c: Dictionary) -> void:
+	match c["kind"]:
+		&"radio":
+			_set_control(Controls.RADIO_ENABLED, c["value"])
+		&"restart":
+			_power_cycle(c["value"])
+	_sync_controls()
+	_resume()
+
+
+func _resume() -> void:
+	_set_speed(_last_speed)
+
+
+## _show_decision opens or closes the auto-pause panel. While it is open the log
+## hides and the charts may shrink, the clock is stopped and the panel is what the
+## player reads; the charts still fill any room that is left.
+func _show_decision(on: bool) -> void:
+	_decision.visible = on
+	for part in _log_parts:
+		part.visible = not on
+	for c in _charts:
+		c.custom_minimum_size.y = CHART_MIN_DECIDING if on else CHART_MIN
 
 
 ## _refresh redraws the charts, labels and log once per frame, however many steps
@@ -265,7 +408,11 @@ func _refresh() -> void:
 		_charts[i].total_steps = s.total_steps
 		_charts[i].progress = progress
 	_charts[0].modes = r.mode
-	_charts[2].max_value = maxf(r.delivered_bits_total, 1.0)
+	_charts[2].max_value = maxf(maxf(r.delivered_bits_total, _goal_bits * 1.25), 1.0)
+	if _goal_bits > 0.0:
+		_goal.text = "Goal %d %%" % mini(floori(100.0 * r.delivered_bits_total / _goal_bits), 100)
+		var met := r.delivered_bits_total >= _goal_bits
+		_goal.add_theme_color_override("font_color", UiStyle.GOOD if met or _on_track else UiStyle.WARN)
 	var days_total := int(_mission.input.duration_s / 86400.0)
 	var day := int(s.t_s / 86400.0)
 	if day != _shown_day:
@@ -320,9 +467,12 @@ func _update_forecast() -> void:
 	if s.done:
 		_forecast.text = ""
 		return
-	var f := Warnings.forecast(_mission.input, _mission.controls, _mission.timeline, s)
-	var lines := Explain.forecast(f, s)
-	_forecast.text = "Estimate with these settings (averages over orbits and passes):\n" + "\n".join(lines)
+	var now := _outlook(_mission.controls)
+	_on_track = float(now["projected"]) >= _goal_bits
+	var lines := [Explain.goal_outlook(now["projected"], _goal_bits)] + Explain.forecast(now["forecast"], s)
+	_forecast.text = "If the settings stay and nothing else breaks (averages over orbits and passes):\n" + "\n".join(lines)
+	if not _duty_dragging:
+		_show_effects(_mission.controls.duty_cycle)
 
 
 func _finish_now() -> void:
@@ -344,8 +494,9 @@ func _end() -> void:
 	_radio.disabled = true
 	_finish.disabled = true
 	_report.disabled = false
-	_banner.get_parent().visible = false
+	_show_decision(false)
 	_forecast.text = ""
+	_show_effects(0.0)
 	var r := _mission.state.result
 	if r.end_reason == RunResult.EndReason.COMPLETED:
 		_log_line("Mission complete. %s sent home." % Explain.mb(r.delivered_bits_total), UiStyle.GOOD)
@@ -390,9 +541,9 @@ func _log_line(text: String, color: Color) -> void:
 
 func _chart(title: String, color: Color, max_value: float, format: Callable) -> LineChart:
 	var c := LineChart.new()
-	# Three charts at the default 130 px leave no room for the pause banner at 720 px.
+	# Three charts at the default 130 px leave no room for the pause panel at 720 px.
 	# They still grow to fill a larger window.
-	c.custom_minimum_size.y = 100
+	c.custom_minimum_size.y = CHART_MIN
 	c.title = title
 	c.color = color
 	c.max_value = maxf(max_value, 1.0)

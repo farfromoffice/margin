@@ -6,6 +6,9 @@ extends Control
 ## story, not a simulation.
 
 var _go: Button
+## Ticked to launch a design with warnings. Null when there are none.
+var _accept: CheckBox
+var _blocked := false
 var _ops: Button
 var _skip: Button
 var _seq: VBoxContainer
@@ -49,7 +52,8 @@ func _ready() -> void:
 	actions.add_child(UiStyle.button("Back to prediction", func(): EventBus.screen_requested.emit(&"prediction")))
 	_go = UiStyle.button("Begin countdown", _begin)
 	_go.icon = UiStyle.icon("rocket")
-	_go.disabled = not violations.is_empty()
+	_blocked = not violations.is_empty()
+	_go.disabled = _blocked
 	_skip = UiStyle.button("Skip to orbit", skip_sequence)
 	_skip.disabled = true
 	_ops = UiStyle.button("Start mission operations", _start_ops)
@@ -64,6 +68,7 @@ func _ready() -> void:
 	var pad := UiStyle.vbox(10)
 	pad.add_child(UiStyle.section("Preflight", "rocket", 18, UiStyle.CYAN))
 	pad.add_child(_preflight(design, orbit, launcher, violations))
+	_update_go()
 
 	var seq_box := UiStyle.vbox(10)
 	seq_box.add_child(UiStyle.section("Launch sequence", "flag", 18))
@@ -130,7 +135,15 @@ func _show_overlay(id: StringName) -> void:
 		p.visible = on
 
 
+## _update_go enables the countdown when nothing blocks the launch and any
+## warnings are accepted.
+func _update_go() -> void:
+	_go.disabled = _blocked or (_accept != null and not _accept.button_pressed)
+
+
 func _begin() -> void:
+	if _accept:
+		_accept.disabled = true
 	_go.disabled = true
 	_skip.disabled = false
 	_show_overlay(&"sequence")
@@ -174,8 +187,15 @@ func _preflight(design: MissionDesign, orbit: Dictionary, launcher: Dictionary, 
 		if warnings.is_empty():
 			box.add_child(_item("Design warnings", "none", true))
 		else:
-			# warnings never block, the players already saw them on the design screen
-			box.add_child(_item("Design warnings", "%d, launching anyway" % warnings.size(), true, UiStyle.WARN))
+			# Warnings never block but launching with them is a decision: each one is
+			# listed again and the countdown waits for the player to accept them.
+			box.add_child(_item("Design warnings", "%d" % warnings.size(), true, UiStyle.WARN))
+			for w in warnings:
+				box.add_child(UiStyle.label("• " + Explain.warning(w), 14, UiStyle.WARN, true))
+			_accept = CheckBox.new()
+			_accept.text = "I accept these risks"
+			_accept.toggled.connect(func(_on: bool): _update_go())
+			box.add_child(_accept)
 	for v in violations:
 		box.add_child(UiStyle.label("NO GO: %s" % Explain.violation(v), 15, UiStyle.BAD, true))
 	var go := violations.is_empty()

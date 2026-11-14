@@ -287,3 +287,106 @@ func test_forecast_follows_the_controls_and_the_state() -> void:
 	assert_lt(off["storage_full_in_s"], INF)
 	m.state.stored_bits = input.storage_capacity_bits
 	assert_eq(Warnings.forecast(input, m.controls, t, m.state)["storage_full_in_s"], 0.0, "already full")
+
+
+## The goal projection is what the operations screen shows as "on track" or
+## "short". It has to agree with the real run, with and without Safe mode cycles.
+func test_projection_matches_the_run_with_and_without_safe_mode() -> void:
+	for instrument_w in [4.0, 40.0]:
+		var input := _make_input(10.0)
+		input.instrument_power_w = instrument_w
+		var t := _timeline(input)
+		var m := Mission.new(input, t)
+		var projected := Warnings.projected_delivered_bits(input, t, m.controls, m.state)
+		var r := Simulator.run(input, _timeline(input))
+		if instrument_w > 4.0:
+			assert_gt(r.safe_time_s, 0.0, "the hungry camera does cycle through Safe mode")
+		assert_almost_eq(projected, r.delivered_bits_total, 0.03 * r.delivered_bits_total, "camera at %.0f W" % instrument_w)
+
+
+func test_projection_halfway_counts_what_is_home_already() -> void:
+	var input := _make_input(10.0)
+	var t := _timeline(input)
+	var m := _no_pauses(Mission.new(input, t))
+	m.advance(m.state.total_steps / 2)
+	var home := m.state.result.delivered_bits_total
+	var projected := Warnings.projected_delivered_bits(input, t, m.controls, m.state)
+	assert_gt(projected, home)
+	m.finish()
+	assert_almost_eq(projected, m.state.result.delivered_bits_total, 0.03 * m.state.result.delivered_bits_total)
+	m = _no_pauses(Mission.new(input, _timeline(input)))
+	m.advance(m.state.total_steps / 2)
+	m.set_control(Controls.RADIO_ENABLED, false)
+	assert_eq(Warnings.projected_delivered_bits(input, t, m.controls, m.state), m.state.result.delivered_bits_total,
+			"a silent radio sends nothing more")
+
+
+func test_low_battery_offers_the_radio_and_the_exchange_rate_but_no_camera_setting() -> void:
+	var input := _make_input()
+	input.instrument_power_w = 40.0
+	var t := _timeline(input)
+	var m := Mission.new(input, t)
+	m.set_control(Controls.DUTY_CYCLE, 1.0)
+	var fired: Array[StringName] = [AutoPause.LOW_BATTERY]
+	assert_eq(Warnings.choices(fired, input, t, m.controls, m.state), [{"kind": &"radio", "value": false}] as Array[Dictionary])
+	var step := Warnings.camera_step(input, t)
+	var c := Controls.new()
+	c.duty_cycle = 0.5
+	var at_half := Warnings.orbit_energy_j(input, t, c)
+	c.duty_cycle = 0.6
+	assert_almost_eq(at_half - Warnings.orbit_energy_j(input, t, c), step["energy_per_orbit_j"], 1e-6, "10 % of camera time costs what it says")
+	assert_almost_eq(Warnings.generated_bits_per_day(input, c) - 0.5 * input.instrument_rate_bps * 86400.0, step["bits_per_day"], 1e-3)
+
+
+func test_choices_follow_the_reason() -> void:
+	var input := _make_input()
+	var t := _timeline(input)
+	var m := Mission.new(input, t)
+	var low: Array[StringName] = [AutoPause.LOW_BATTERY]
+	assert_eq(Warnings.choices(low, input, t, m.controls, m.state), [] as Array[Dictionary],
+			"a battery that gains every orbit needs no change")
+	m.set_control(Controls.RADIO_ENABLED, false)
+	var pass_off: Array[StringName] = [AutoPause.CONTACT_BEGIN]
+	assert_eq(Warnings.choices(pass_off, input, t, m.controls, m.state), [{"kind": &"radio", "value": true}] as Array[Dictionary])
+	m.state.radio_hung = true
+	m.set_control(Controls.RADIO_ENABLED, true)
+	var broke: Array[StringName] = [AutoPause.FAILURE]
+	assert_eq(Warnings.choices(broke, input, t, m.controls, m.state), [{"kind": &"restart", "value": Controls.RADIO_ENABLED}] as Array[Dictionary])
+
+
+func test_full_memory_offers_the_radio_only_when_it_is_off() -> void:
+	var input := _make_input()
+	input.downlink_rate_bps = 0.5e6
+	var t := _timeline(input)
+	var m := Mission.new(input, t)
+	m.set_control(Controls.DUTY_CYCLE, 1.0)
+	var full: Array[StringName] = [AutoPause.STORAGE_HIGH]
+	assert_eq(Warnings.choices(full, input, t, m.controls, m.state), [] as Array[Dictionary], "the camera time is left to the player")
+	m.set_control(Controls.RADIO_ENABLED, false)
+	assert_eq(Warnings.choices(full, input, t, m.controls, m.state), [{"kind": &"radio", "value": true}] as Array[Dictionary])
+
+
+func test_factor_numbers_are_the_run_and_design_figures() -> void:
+	var input := _make_input(4.0)
+	var t := _timeline(input)
+	var r := Simulator.run(input, _timeline(input))
+	var n := Outcome.factor_numbers(r, input, t)
+	assert_almost_eq(n["made_per_day"], r.generated_bits_total / 4.0, 1.0)
+	assert_almost_eq(n["sendable_per_day"], input.downlink_rate_bps * t.contact_s_per_day(), 1.0)
+	assert_eq(n["energy_per_orbit_j"], Warnings.orbit_energy_j(input, t))
+	assert_eq(n["storage_bits"], input.storage_capacity_bits)
+
+
+func test_projection_counts_a_frozen_camera_clearing_in_safe_mode() -> void:
+	for instrument_w in [40.0, 4.0]:
+		var input := _make_input(10.0)
+		input.instrument_power_w = instrument_w
+		var t := _timeline(input)
+		var hang: Array[Dictionary] = [{"t_s": 0.0, "kind": &"instrument_hang", "magnitude": 0.0}]
+		var m := _no_pauses(Mission.new(input, t, hang))
+		m.advance(1)
+		assert_true(m.state.instrument_hung)
+		var projected := Warnings.projected_delivered_bits(input, t, m.controls, m.state)
+		m.finish()
+		var actual := m.state.result.delivered_bits_total
+		assert_almost_eq(projected, actual, maxf(0.03 * actual, 1.0e6), "camera at %.0f W" % instrument_w)

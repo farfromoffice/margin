@@ -48,6 +48,8 @@ Category specific fields:
 | structure | volume_u (CubeSat units), max_payload_kg |
 | instrument | data_rate_bps (generation rate while on) |
 
+Any component may carry `min_structure_u`, the smallest structure (`volume_u`) it fits. The 6U deployable array has 6: its panels are sized for a 6U body.
+
 Component reliability is not modeled in the first version.
 
 ## launchers.json

@@ -31,11 +31,9 @@ func _ready() -> void:
 
 	var actual := Outcome.limiting_factors(r)
 	col.add_child(_card("Your prediction", _prediction_lines(actual), "star"))
-	if not actual.is_empty():
-		var why: Array = []
-		for f in actual:
-			why.append(["%s: %s" % [Explain.factor(f), Explain.FACTOR_HINTS[f]], UiStyle.TEXT])
-		col.add_child(_card("What happened", why, "satellite"))
+	var why := _why_lines(r, actual)
+	if not why.is_empty():
+		col.add_child(_card("What held the mission back", why, "satellite"))
 	var failures := Explain.failure_lines(r)
 	if not failures.is_empty():
 		var lines: Array = failures.map(func(l): return [l, UiStyle.WARN])
@@ -85,6 +83,29 @@ func _goal_lines(s: Scenario, r: RunResult) -> Array:
 	if prev:
 		var diff := r.delivered_bits_total - prev.delivered_bits_total
 		out.append(["Last flight sent %s, this one %s%s." % [Explain.mb(prev.delivered_bits_total), "+" if diff >= 0.0 else "-", Explain.mb(absf(diff))], UiStyle.MUTED])
+	return out
+
+
+## _why_lines explains each limiting factor with the design's numbers, says whether
+## the design left alone hit it too and names the ones the changes in flight
+## avoided. Both come from two whole flights, the flown one and the baseline;
+## nothing here is split per change since changes depend on each other.
+func _why_lines(r: RunResult, actual: Array[StringName]) -> Array:
+	var out: Array = []
+	var m := GameState.mission
+	var base := GameState.baseline_result
+	var intervened := not r.commands.is_empty() and base != null
+	var in_base: Array[StringName] = Outcome.limiting_factors(base) if base else actual
+	var n := Outcome.factor_numbers(r, m.input, m.timeline)
+	for f in actual:
+		var lines := Explain.factor_lines(f, n, r, f in in_base, intervened)
+		out.append([lines[0], UiStyle.TEXT])
+		for i in range(1, lines.size()):
+			out.append([lines[i], UiStyle.MUTED])
+	if intervened:
+		for f in in_base:
+			if not f in actual:
+				out.append(["Avoided: left alone, the design would have been held back by %s. The changes in flight prevented it." % Explain.factor(f).to_lower(), UiStyle.GOOD])
 	return out
 
 

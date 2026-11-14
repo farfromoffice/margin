@@ -6,6 +6,10 @@ extends RefCounted
 ## Each warning is {kind, value, limit, unit}.
 
 
+## the camera slider moves in these steps
+const DUTY_STEP := 0.05
+
+
 static func compute(input: SimInput, timeline: OrbitTimeline) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 	if timeline.period_s > 0.0:
@@ -26,10 +30,7 @@ static func compute(input: SimInput, timeline: OrbitTimeline) -> Array[Dictionar
 
 static func forecast(input: SimInput, controls: Controls, timeline: OrbitTimeline, s: SimState) -> Dictionary:
 	input = _as_damaged(input, s)
-	var c := Controls.new()
-	c.duty_cycle = controls.duty_cycle
-	# a hung radio idles exactly like one switched off, so that is how it's counted
-	c.radio_enabled = controls.radio_enabled and not s.radio_hung
+	var c := _effective(controls, s)
 	var net := orbit_energy_j(input, timeline, c)
 	var made := 0.0 if s.instrument_hung else generated_bits_per_day(input, c)
 	var sendable := deliverable_bits_per_day(input, timeline, c)
@@ -48,6 +49,89 @@ static func forecast(input: SimInput, controls: Controls, timeline: OrbitTimelin
 		"storage_full_in_s": storage_full_in_s,
 		"safe_mode_in_s": safe_mode_in_s,
 	}
+
+
+## projected_delivered_bits estimates the data at home when the mission ends if the
+## controls stay as they are: what is home already and what the radio can still
+## send, capped by what is stored and what the camera still makes. When the battery
+## drains every orbit, the craft cycles between Normal and Safe mode after the first
+## Safe mode: it drains from the exit level to the entry level in Normal and charges
+## back across the same span in Safe, with the camera off and the radio silent. Both
+## then only work for normal_share of the time.
+static func projected_delivered_bits(input: SimInput, timeline: OrbitTimeline, controls: Controls, s: SimState) -> float:
+	var f := forecast(input, controls, timeline, s)
+	var remaining_days := float(f["remaining_s"]) / 86400.0
+	var made_per_day := float(f["generated_bits_per_day"])
+	var sendable_per_day := float(f["sendable_bits_per_day"])
+	var safe_s := float(f["safe_mode_in_s"])
+	if s.mode == RunResult.Mode.SAFE:
+		safe_s = 0.0
+	if safe_s >= float(f["remaining_s"]):
+		var made_all := made_per_day * remaining_days
+		return s.result.delivered_bits_total + minf(sendable_per_day * remaining_days, s.stored_bits + made_all)
+	var before := safe_s / 86400.0
+	var cycling := normal_share(input, timeline, float(f["energy_per_orbit_j"]), s) * (remaining_days - before)
+	var made_after := generated_bits_per_day(input, controls) if s.instrument_hung else made_per_day
+	var sent_before := minf(sendable_per_day * before, s.stored_bits + made_per_day * before)
+	var left := s.stored_bits + made_per_day * before - sent_before
+	var sent_after := minf(sendable_per_day * cycling, left + made_after * cycling)
+	return s.result.delivered_bits_total + sent_before + sent_after
+
+
+## normal_share returns the share of time spent in Normal mode once the battery
+## cycles through Safe mode. net is the Normal mode energy per orbit, negative when
+## it drains. A Safe mode that cannot charge the battery gives 0.
+static func normal_share(input: SimInput, timeline: OrbitTimeline, net: float, s: SimState) -> float:
+	if net >= 0.0:
+		return 1.0
+	input = _as_damaged(input, s)
+	var period := timeline.period_s
+	var charge := input.solar_power_w * (1.0 - timeline.eclipse_fraction) * period \
+			- (input.bus_safe_power_w + input.radio_idle_power_w) * period
+	if charge <= 0.0:
+		return 0.0
+	return charge / (charge - net)
+
+
+## choices lists the switches and repairs that answer an auto-pause, as
+## {kind, value}: &"radio" switches the radio, &"restart" power-cycles the
+## control named in value. The camera time is not among them on purpose: how far
+## to turn it down trades data against power or memory, and that is the player's
+## call, made on the slider with camera_step() and the effect lines to go by.
+static func choices(fired: Array[StringName], input: SimInput, timeline: OrbitTimeline, controls: Controls, s: SimState) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	if AutoPause.FAILURE in fired:
+		if s.radio_hung:
+			out.append({"kind": &"restart", "value": Controls.RADIO_ENABLED})
+		if s.instrument_hung and controls.duty_cycle > 0.0:
+			out.append({"kind": &"restart", "value": Controls.DUTY_CYCLE})
+	var f := forecast(input, controls, timeline, s)
+	var power_short := float(f["energy_per_orbit_j"]) < 0.0
+	if power_short and controls.radio_enabled and (AutoPause.LOW_BATTERY in fired or AutoPause.SAFE_ENTER in fired):
+		out.append({"kind": &"radio", "value": false})
+	# a locked radio comes back on with its restart, switching it on does nothing
+	if (AutoPause.STORAGE_HIGH in fired or AutoPause.CONTACT_BEGIN in fired) and not controls.radio_enabled and not s.radio_hung:
+		out.append({"kind": &"radio", "value": true})
+	return out
+
+
+## camera_step returns what 10 % of camera time is worth: the energy it uses per
+## average orbit and the data it makes per day. The auto-pause panel shows it as
+## the exchange rate between pictures and power or memory.
+static func camera_step(input: SimInput, timeline: OrbitTimeline) -> Dictionary:
+	return {
+		"energy_per_orbit_j": input.instrument_power_w * 0.1 * timeline.period_s,
+		"bits_per_day": input.instrument_rate_bps * 0.1 * 86400.0,
+	}
+
+
+## _effective copies the controls the way the spacecraft acts on them. A hung
+## radio idles exactly like one switched off.
+static func _effective(controls: Controls, s: SimState) -> Controls:
+	var c := Controls.new()
+	c.duty_cycle = controls.duty_cycle
+	c.radio_enabled = controls.radio_enabled and not s.radio_hung
+	return c
 
 
 ## Copy of input with the solar and battery numbers the failures so far left.

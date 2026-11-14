@@ -22,6 +22,22 @@ static func limiting_factors(r: RunResult) -> Array[StringName]:
 	return out
 
 
+## factor_numbers returns the numbers behind the limiting factors of a flown run:
+## what the camera made per day on average, what the radio could send per day
+## with the passes this orbit and these stations give, the pass time per day, the
+## energy per orbit at the launch settings and the memory size. The report uses
+## them to explain a factor with the design's own figures.
+static func factor_numbers(r: RunResult, input: SimInput, timeline: OrbitTimeline) -> Dictionary:
+	var days := maxf(r.end_t_s / 86400.0, 1.0 / 24.0)
+	return {
+		"made_per_day": r.generated_bits_total / days,
+		"sendable_per_day": Warnings.deliverable_bits_per_day(input, timeline),
+		"contact_s_per_day": timeline.contact_s_per_day(),
+		"energy_per_orbit_j": Warnings.orbit_energy_j(input, timeline),
+		"storage_bits": input.storage_capacity_bits,
+	}
+
+
 ## One row per scenario goal: {id, target, actual, met}. Goals the game can't
 ## measure yet come back with actual null and met false.
 static func objectives(scenario: Scenario, r: RunResult) -> Array[Dictionary]:
