@@ -22,6 +22,8 @@ var format := func(v: float) -> String: return "%.1f" % v
 ## negative value draws no line.
 var threshold := -1.0
 var threshold_label := ""
+## red for a limit to stay away from, another color for a target to reach
+var threshold_color := UiStyle.BAD
 
 const PAD := Vector2(10, 28)
 
@@ -43,7 +45,7 @@ func _draw() -> void:
 	# The threshold is drawn last. The Safe mode bands and the series would cover it.
 	if threshold >= 0.0:
 		var ty := _y(plot, threshold)
-		var line_color := Color(UiStyle.BAD, 0.9)
+		var line_color := Color(threshold_color, 0.9)
 		draw_dashed_line(Vector2(plot.position.x, ty), Vector2(plot.end.x, ty), line_color, 1.0, 6.0)
 		var text_size := font.get_string_size(threshold_label, HORIZONTAL_ALIGNMENT_LEFT, -1, 12)
 		var at := Vector2(plot.end.x - text_size.x - 4, ty - 4)

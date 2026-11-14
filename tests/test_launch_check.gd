@@ -50,6 +50,18 @@ func test_heavy_design_is_over_launcher_and_scenario() -> void:
 	assert_eq(v[0]["unit"], "kg")
 
 
+## max_payload_kg is in the catalog for both frames and was never checked.
+func test_parts_heavier_than_the_frame_carries_block_launch() -> void:
+	var c := _catalog()
+	c.add("components", {"id": "frame", "category": "structure", "mass_kg": 1.0, "cost_kusd": 10.0, "power_w": 0.0, "safe_power_w": 0.0, "max_payload_kg": 2.0})
+	var v := LaunchCheck.check(_design(), _scenario(), c)
+	assert_eq(_kinds(v), [&"over_structure_payload"])
+	assert_almost_eq(float(v[0]["value"]), 2.6, 1e-9, "the frame's own kilogram is not payload")
+	assert_eq(v[0]["limit"], 2.0)
+	c.add("components", {"id": "frame", "category": "structure", "mass_kg": 1.0, "cost_kusd": 10.0, "power_w": 0.0, "safe_power_w": 0.0, "max_payload_kg": 2.6})
+	assert_eq(LaunchCheck.check(_design(), _scenario(), c), [] as Array[Dictionary], "exactly full is fine")
+
+
 func test_unreachable_orbit_and_budget() -> void:
 	var d := _design()
 	d.orbit_id = &"leo_400"

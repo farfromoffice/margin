@@ -107,7 +107,7 @@ What the sweep says, as input for the playtest:
 
 - **The budget never binds.** The most expensive launchable design costs 953 kUSD against a 1,000 kUSD budget, and the cheapest winner spends a quarter of it. Every cost is fictional, so this is the knob to turn if budget should matter.
 - **No design is ever lost.** Safe mode always catches the battery before zero, so power costs science but never the spacecraft. Losses only come from live failures.
-- **The structure changes nothing in flight.** 3U and 6U give the same results; mass stays under 12 kg either way and `max_payload_kg` is not checked.
+- **The structure changes nothing in flight.** 3U and 6U give the same results. The launch check now enforces `max_payload_kg`, but the heaviest possible set of parts is 5.49 kg against the 3U frame's 5.66 kg, so it never binds with the current catalog and the sweep is unchanged.
 - **SSO 700 is out of reach.** Only the dedicated launcher flies there, at 7,500 kUSD.
 - **The UHF radio never wins**, which is the intended lesson: 9.6 kbit/s cannot move pictures.
 - Raising the goal makes the budget bind (above about 256,000 MB the free ISS launch cannot deliver enough), but it also rules out S-band, which the current goal keeps on purpose (DESIGN.md open question 6). The goal stays at 100,000 MB.

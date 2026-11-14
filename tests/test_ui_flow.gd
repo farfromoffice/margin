@@ -100,7 +100,11 @@ func test_operations_clock_runs_and_auto_pauses_on_a_pass_with_the_radio_off() -
 	assert_true(run._clock.paused, "the next pass stops the clock")
 	var pressed: Array = run._speed_buttons.keys().filter(func(k): return run._speed_buttons[k].button_pressed)
 	assert_eq(pressed, [0], "only Pause shows as selected")
-	assert_true(run._banner.get_parent().visible)
+	assert_true(run._decision.visible, "the decision panel opens")
+	var titles: Array = run._options.get_children().map(func(b): return b.text.get_slice("\n", 0))
+	assert_has(titles, "Radio on", "the obvious fix is offered")
+	assert_has(titles, "Keep going", "and so is changing nothing")
+	assert_false(run._log_parts[1].visible, "the log makes room for it")
 	assert_gt(m.state.contact_starts, 0)
 	var at := m.state.step
 	run._process(1.0)
@@ -134,6 +138,26 @@ func test_second_flight_compares_with_the_first() -> void:
 	var texts := report.find_children("*", "Label", true, false).map(func(l): return l.text)
 	assert_has(texts, "Last flight vs. this flight")
 	assert_has(texts, "1 choice changed.")
+
+
+func test_launch_waits_for_accepted_warnings() -> void:
+	_reference_design()
+	var parts := GameState.design.component_ids
+	parts[parts.find(&"radio_s_band")] = &"radio_uhf"
+	var launch: Control = await _go(&"launch")
+	assert_not_null(launch._accept, "a UHF radio can't keep up, so there is something to accept")
+	assert_true(launch._go.disabled, "no countdown before the risks are accepted")
+	launch._accept.button_pressed = true
+	assert_false(launch._go.disabled)
+	launch._accept.button_pressed = false
+	assert_true(launch._go.disabled)
+
+
+func test_launch_without_warnings_needs_no_acceptance() -> void:
+	_reference_design()
+	var launch: Control = await _go(&"launch")
+	assert_null(launch._accept)
+	assert_false(launch._go.disabled)
 
 
 func test_picking_a_part_replaces_the_old_one() -> void:
@@ -192,9 +216,19 @@ func test_expanding_the_3d_view_hides_the_side_panels() -> void:
 func test_operations_screen_fits_the_base_window_with_a_pause_banner() -> void:
 	var run: Control = await _launch()
 	run._set_speed(0)
+	# worst case: every reason at once with a failure, and both restarts offered
+	var s: SimState = GameState.mission.state
+	s.radio_hung = true
+	s.instrument_hung = true
+	s.failures_started.assign([&"radio_hang"])
+	GameState.mission.controls.duty_cycle = 1.0
+	GameState.mission.controls.radio_enabled = false
 	var every_reason: Array[StringName] = AutoPause.TRIGGERS.duplicate()
-	run._banner.text = "Paused, Day 30, 23:59. " + Explain.pause_reasons(every_reason)
-	run._banner.get_parent().visible = true
+	run._auto_paused(every_reason)
+	# and the widest header the mission can show
+	run._day.text = "Day 30 of 30"
+	run._mode.text = "SAFE MODE"
+	run._goal.text = "Goal 100 %"
 	await wait_process_frames(2)
 	var page: Control = run.get_child(0)
 	var needed := page.get_combined_minimum_size()

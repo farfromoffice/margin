@@ -287,3 +287,97 @@ func test_forecast_follows_the_controls_and_the_state() -> void:
 	assert_lt(off["storage_full_in_s"], INF)
 	m.state.stored_bits = input.storage_capacity_bits
 	assert_eq(Warnings.forecast(input, m.controls, t, m.state)["storage_full_in_s"], 0.0, "already full")
+
+
+func test_break_even_duty_balances_an_orbit() -> void:
+	var input := _make_input()
+	input.instrument_power_w = 40.0
+	var t := _timeline(input)
+	var m := Mission.new(input, t)
+	var be := Warnings.break_even_duty(input, t, m.controls, m.state)
+	assert_between(be, 0.01, 0.99)
+	var c := Controls.new()
+	c.radio_enabled = true
+	c.duty_cycle = be
+	assert_almost_eq(Warnings.orbit_energy_j(input, t, c), 0.0, 1.0, "no gain, no loss at break-even")
+	m.set_control(Controls.RADIO_ENABLED, false)
+	assert_gt(Warnings.break_even_duty(input, t, m.controls, m.state), be, "a silent radio leaves more for the camera")
+
+
+## The goal projection is what the operations screen shows as "on track" or
+## "short". It has to agree with the real run, with and without Safe mode cycles.
+func test_projection_matches_the_run_with_and_without_safe_mode() -> void:
+	for instrument_w in [4.0, 40.0]:
+		var input := _make_input(10.0)
+		input.instrument_power_w = instrument_w
+		var t := _timeline(input)
+		var m := Mission.new(input, t)
+		var projected := Warnings.projected_delivered_bits(input, t, m.controls, m.state)
+		var r := Simulator.run(input, _timeline(input))
+		if instrument_w > 4.0:
+			assert_gt(r.safe_time_s, 0.0, "the hungry camera does cycle through Safe mode")
+		assert_almost_eq(projected, r.delivered_bits_total, 0.03 * r.delivered_bits_total, "camera at %.0f W" % instrument_w)
+
+
+func test_projection_halfway_counts_what_is_home_already() -> void:
+	var input := _make_input(10.0)
+	var t := _timeline(input)
+	var m := _no_pauses(Mission.new(input, t))
+	m.advance(m.state.total_steps / 2)
+	var home := m.state.result.delivered_bits_total
+	var projected := Warnings.projected_delivered_bits(input, t, m.controls, m.state)
+	assert_gt(projected, home)
+	m.finish()
+	assert_almost_eq(projected, m.state.result.delivered_bits_total, 0.03 * m.state.result.delivered_bits_total)
+	m = _no_pauses(Mission.new(input, _timeline(input)))
+	m.advance(m.state.total_steps / 2)
+	m.set_control(Controls.RADIO_ENABLED, false)
+	assert_eq(Warnings.projected_delivered_bits(input, t, m.controls, m.state), m.state.result.delivered_bits_total,
+			"a silent radio sends nothing more")
+
+
+func test_low_battery_offers_a_camera_time_that_balances_power() -> void:
+	var input := _make_input()
+	input.instrument_power_w = 40.0
+	var t := _timeline(input)
+	var m := Mission.new(input, t)
+	m.set_control(Controls.DUTY_CYCLE, 1.0)
+	var fired: Array[StringName] = [AutoPause.LOW_BATTERY]
+	var offered := Warnings.choices(fired, input, t, m.controls, m.state)
+	var duty := offered.filter(func(c): return c["kind"] == &"duty")
+	assert_eq(duty.size(), 1)
+	var c := Controls.new()
+	c.duty_cycle = duty[0]["value"]
+	assert_gte(Warnings.orbit_energy_j(input, t, c), 0.0, "the suggestion really balances an orbit")
+	c.duty_cycle += Warnings.DUTY_STEP
+	assert_lt(Warnings.orbit_energy_j(input, t, c), 0.0, "and it is the highest step that does")
+
+
+func test_choices_follow_the_reason() -> void:
+	var input := _make_input()
+	var t := _timeline(input)
+	var m := Mission.new(input, t)
+	var low: Array[StringName] = [AutoPause.LOW_BATTERY]
+	assert_eq(Warnings.choices(low, input, t, m.controls, m.state), [] as Array[Dictionary],
+			"a battery that gains every orbit needs no change")
+	m.set_control(Controls.RADIO_ENABLED, false)
+	var pass_off: Array[StringName] = [AutoPause.CONTACT_BEGIN]
+	assert_eq(Warnings.choices(pass_off, input, t, m.controls, m.state), [{"kind": &"radio", "value": true}] as Array[Dictionary])
+	m.state.radio_hung = true
+	m.set_control(Controls.RADIO_ENABLED, true)
+	var broke: Array[StringName] = [AutoPause.FAILURE]
+	assert_eq(Warnings.choices(broke, input, t, m.controls, m.state), [{"kind": &"restart", "value": Controls.RADIO_ENABLED}] as Array[Dictionary])
+
+
+func test_full_memory_offers_a_camera_time_the_radio_keeps_up_with() -> void:
+	var input := _make_input()
+	input.downlink_rate_bps = 0.5e6
+	var t := _timeline(input)
+	var m := Mission.new(input, t)
+	m.set_control(Controls.DUTY_CYCLE, 1.0)
+	var full: Array[StringName] = [AutoPause.STORAGE_HIGH]
+	var duty := Warnings.choices(full, input, t, m.controls, m.state).filter(func(c): return c["kind"] == &"duty")
+	assert_eq(duty.size(), 1)
+	var c := Controls.new()
+	c.duty_cycle = duty[0]["value"]
+	assert_lte(Warnings.generated_bits_per_day(input, c), Warnings.deliverable_bits_per_day(input, t, c), "memory stops filling")

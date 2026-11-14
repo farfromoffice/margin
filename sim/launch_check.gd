@@ -16,17 +16,25 @@ static func check(design: MissionDesign, scenario: Scenario, catalog: Object) ->
 	var mass_kg: float = sums["mass_kg"]
 	var cost_kusd: float = sums["cost_kusd"]
 	var seen := {}
+	var structure := {}
 	for id in design.component_ids:
 		var c: Dictionary = catalog.get_entry("components", id)
 		if c.is_empty():
 			out.append(_v(&"unknown_component", String(id), null, ""))
 			continue
 		seen[str(c.get("category", ""))] = true
+		if c.get("category", "") == "structure":
+			structure = c
 	for category in REQUIRED_CATEGORIES:
 		if not seen.has(category):
 			out.append(_v(&"missing_part", category, null, ""))
 	if design.ground_station_ids.is_empty():
 		out.append(_v(&"missing_part", "ground_station", null, ""))
+	# max_payload_kg is what the frame carries on top of its own mass
+	if structure.has("max_payload_kg"):
+		var payload_kg := mass_kg - float(structure.get("mass_kg", 0.0))
+		if payload_kg > float(structure["max_payload_kg"]):
+			out.append(_v(&"over_structure_payload", payload_kg, float(structure["max_payload_kg"]), "kg"))
 
 	if not scenario.allowed_orbit_ids.is_empty() and not design.orbit_id in scenario.allowed_orbit_ids:
 		out.append(_v(&"orbit_not_allowed", String(design.orbit_id), null, ""))

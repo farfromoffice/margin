@@ -71,6 +71,8 @@ static func violation(v: Dictionary) -> String:
 			return "This mission can't use that orbit."
 		&"orbit_unreachable":
 			return "The launcher can't reach this orbit."
+		&"over_structure_payload":
+			return "Too heavy for the frame: %s of parts, it carries %s." % [kg(v["value"]), kg(v["limit"])]
 		&"over_launcher_capacity":
 			return "Too heavy for the launcher: %s of %s." % [kg(v["value"]), kg(v["limit"])]
 		&"over_scenario_mass":
@@ -263,27 +265,91 @@ static func command(c: Dictionary) -> String:
 
 ## forecast turns the numbers of Warnings.forecast into lines for the operations
 ## screen. The numbers are averages and the times read as "about".
-static func forecast(f: Dictionary, s: SimState) -> Array[String]:
+## With events_only the lines that announce nothing ("not expected") are left out,
+## for the auto-pause panel's "if nothing changes".
+static func forecast(f: Dictionary, s: SimState, events_only := false) -> Array[String]:
 	var lines: Array[String] = []
-	var net := float(f["energy_per_orbit_j"])
-	lines.append("Power per orbit: %s%s" % ["+" if net >= 0.0 else "", wh(net)])
-	lines.append("Data per day: %s made, %s can be sent" % [mb(f["generated_bits_per_day"]), mb(f["sendable_bits_per_day"])])
 	var remaining := float(f["remaining_s"])
 	var full := float(f["storage_full_in_s"])
 	if s.stored_bits > 0.0 and full == 0.0:
 		lines.append("Memory: full now")
 	elif full < remaining:
 		lines.append("Memory full in about %s" % days(full))
-	else:
+	elif not events_only:
 		lines.append("Memory: does not fill before the end")
 	var safe := float(f["safe_mode_in_s"])
 	if s.mode == RunResult.Mode.SAFE:
 		lines.append("Safe mode: in it now")
 	elif safe < remaining:
 		lines.append("Safe mode in about %s" % days(safe))
-	else:
+	elif not events_only:
 		lines.append("Safe mode: not expected")
 	return lines
+
+
+## power_effect is the energy line under the camera slider: what one average orbit
+## gains or loses with these settings.
+static func power_effect(f: Dictionary) -> String:
+	var net := float(f["energy_per_orbit_j"])
+	if net >= 0.0:
+		return "Battery gains %s every orbit" % wh(net)
+	return "Battery loses %s every orbit, Safe mode follows" % wh(-net)
+
+
+## data_effect is the line under the radio switch: what the camera makes against
+## what the radio can send per day.
+static func data_effect(f: Dictionary) -> String:
+	var made := float(f["generated_bits_per_day"])
+	var sendable := float(f["sendable_bits_per_day"])
+	if sendable <= 0.0:
+		return "Makes %s a day, sends nothing, memory fills" % mb(made)
+	if made > sendable:
+		return "Makes %s a day, can send %s, the rest piles up" % [mb(made), mb(sendable)]
+	return "Makes %s a day, can send %s" % [mb(made), mb(sendable)]
+
+
+## goal_outlook compares the projected data at home with the goal or just names
+## the projection when the scenario has no goal.
+static func goal_outlook(projected_bits: float, goal_bits: float) -> String:
+	if goal_bits <= 0.0:
+		return "About %s home by the end" % mb(projected_bits)
+	if projected_bits >= goal_bits:
+		return "Goal: about %s by the end, on track" % mb(projected_bits)
+	return "Goal: about %s by the end, short by %s" % [mb(projected_bits), mb(goal_bits - projected_bits)]
+
+
+## change describes what a control change did from two outlooks of the operations
+## screen ({forecast, projected}).
+static func change(before: Dictionary, after: Dictionary, goal_bits: float) -> String:
+	var b := float(before["forecast"]["energy_per_orbit_j"])
+	var a := float(after["forecast"]["energy_per_orbit_j"])
+	var what := "goal estimate" if goal_bits > 0.0 else "data home estimate"
+	return "Battery %s → %s per orbit, %s %s → %s" % [_signed_wh(b), _signed_wh(a), what,
+			mb(before["projected"]), mb(after["projected"])]
+
+
+## choice_effect is the second line of an auto pause option: the energy per orbit
+## and the projected data at home it leads to.
+static func choice_effect(_now: Dictionary, then: Dictionary, goal_bits: float) -> String:
+	var a := float(then["forecast"]["energy_per_orbit_j"])
+	var label := "goal" if goal_bits > 0.0 else "home"
+	return "%s per orbit, %s ≈ %s" % [_signed_wh(a), label, mb(then["projected"])]
+
+
+static func _signed_wh(j: float) -> String:
+	return ("+" if j >= 0.0 else "−") + wh(absf(j))
+
+
+## choice names an option of Warnings.choices as a button title.
+static func choice(c: Dictionary) -> String:
+	match c["kind"]:
+		&"duty":
+			return duty(float(c["value"])).replace(" of the time", "")
+		&"radio":
+			return "Radio on" if c["value"] else "Radio off"
+		&"restart":
+			return "Restart radio" if c["value"] == Controls.RADIO_ENABLED else "Restart camera"
+	return str(c)
 
 
 static func _thousands(v: float) -> String:

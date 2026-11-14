@@ -182,9 +182,21 @@ Two choices here go beyond the brief, and both are teaching values the team can 
 - **The low-battery pause has a one-day cooldown.** A weak power design cycles through Safe mode several times a day; re-arming on every recharge gave 226 pauses in one 30-day test mission (one every 0.8 s at 1×). With the cooldown it stops at most once per mission day.
 - **Contact pauses only happen while the radio is off.** The reference design sees about 18 passes a day (527 in 30 days, one every 0.34 s at 1×). With the radio on, transmitting is already the decision. With it off, each new pass is a real choice; after one pause the trigger stays quiet until the player changes the radio again, so leaving it off doesn't interrupt every orbit.
 
+A pause opens a decision panel in place of the mission log: the reason, what happens if nothing changes (goal projection, coming Safe mode or full memory) and the options from `Warnings.choices(fired, input, timeline, controls, state)`, each with the energy per orbit and goal projection it leads to. Nothing is applied until the player picks one; "Keep going" is always offered and resumes at the last speed. The options, `{kind, value}`:
+
+| Reason | Option | When |
+|---|---|---|
+| `failure` | restart the radio or the camera | that part is hung (the camera only when its time is above 0) |
+| `low_battery`, `safe_enter`, or `failure` after battery fade or solar loss | camera at the highest 5 % step that balances an orbit (`break_even_duty`) | energy per orbit is negative and that step is lower than now |
+| same | radio off | energy per orbit is negative and a silent radio alone balances it |
+| `storage_high`, `contact_begin` | radio on | it is off and not hung (a hung radio comes back on with its restart) |
+| `storage_high` | camera at the highest 5 % step the radio keeps up with | the camera makes more than the radio can send |
+
 ## Forecast
 
-When a control changes (and once per mission day), the operations screen shows an estimate for the rest of the mission from the current state, using the same averages as the warnings: energy per orbit, data generated and sendable per day, time until storage is full, time until Safe mode, all under the current controls. These are averages over orbits and passes, not a run of the simulator, and the UI labels them as estimates.
+When a control changes (and once per mission day), the operations screen shows an estimate for the rest of the mission from the current state, using the same averages as the warnings: energy per orbit, data generated and sendable per day, time until storage is full, time until Safe mode, all under the current controls. These are averages over orbits and passes, not a run of the simulator, and the UI labels them as estimates. The energy per orbit and the data per day sit under the camera slider and the radio switch, and the slider line follows the thumb while it is dragged, before anything is applied. Each change is logged with its energy per orbit and goal projection before and after.
+
+**Goal projection.** `Warnings.projected_delivered_bits` is the data at home at the end if the controls stay as they are: what is home, plus what the radio can still send, capped by what is stored and what the camera still makes. When the battery drains every orbit, the spacecraft cycles between Normal and Safe mode after the first Safe mode: it drains from the exit to the entry level in Normal and charges back across the same span in Safe, with the camera off and the radio silent. Both then work for `normal_share = charge / (charge − net)` of the time, where charge is the Safe mode energy gain per orbit. Against 400 random launchable Wildfire Watch designs flown without failures, the projection at launch is within 1.8 % of the real run for 90 % of them and agrees on goal met or missed for 399. The operations screen shows it as the goal line and percentage, "on track" or "short by".
 
 ## No-intervention baseline
 
@@ -219,6 +231,7 @@ Runs on the design before simulation. Returns a list of violations `{kind, value
 | `unknown_component` | a chosen id is not in the catalog |
 | `orbit_not_allowed` | scenario `allowed_orbit_ids` is not empty and lacks the orbit |
 | `orbit_unreachable` | launcher `capacity_kg` has no entry for the orbit |
+| `over_structure_payload` | mass of every part except the structure > the structure's `max_payload_kg` (when it has one) |
 | `over_launcher_capacity` | total mass > `capacity_kg[orbit_id]` |
 | `over_scenario_mass` | total mass > scenario `max_mass_kg` (when > 0) |
 | `over_budget` | hardware plus launcher cost > scenario `budget_kusd` (when > 0) |
