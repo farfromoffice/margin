@@ -190,6 +190,10 @@ When a control changes (and once per mission day), the operations screen shows a
 
 When the mission ends, the same `SimInput` is run again with no commands: the design flown with its launch settings and never touched. The report compares the operated mission with it: data delivered, data discarded, Safe-mode time, mission completion and the objectives. A difference counts only beyond `max(8·10⁶ bit, 0.1 % of the baseline)`; anything smaller is reported as "the same". With no commands the two runs are identical and the report says so instead of claiming an effect.
 
+## Design comparison
+
+From the second flight of a mission on, the report puts the last flight and this one side by side. `GameState.finish_mission` keeps a copy of the flown design next to each result (`last_design`, `previous_design`), since the design screen edits `design` in place. `DesignCompare.rows(before, after, catalog)` returns one row per choice, `{key, before, after, changed}`: orbit, launcher, each part category, ground stations (sorted names, so order does not count), duty cycle, then total mass and cost. Changed rows are highlighted. The result rows reuse `Outcome.compare_runs` with the earlier flight as the baseline, so the same threshold decides what counts as a difference. Failures are not part of the comparison: both flights meet the same plan from the mission seed.
+
 ## RunResult
 
 ```text
@@ -244,10 +248,12 @@ sim/auto_pause.gd        AutoPause: triggers, arming
 sim/mission.gd           Mission: state + controls + command log + auto-pause + power cycle
 sim/failure_plan.gd      FailurePlan.generate(seed, duration_s, dt_s, entries)
 sim/launch_check.gd      LaunchCheck.check(design, scenario, catalog) -> violations
+sim/design_compare.gd    DesignCompare.rows(before, after, catalog) -> one row per choice
 sim/warnings.gd          Warnings.compute(input, timeline) -> warnings
 sim/types/run_result.gd  RunResult
 sim/types/day_state.gd   daily summary
 tools/gmat/              GMAT case generator for orbits.json
+tools/balance.gd         flies every valid Wildfire Watch design, CSV for the balance table
 ```
 
 ## Open questions

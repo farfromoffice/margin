@@ -18,6 +18,10 @@ var last_warnings: Array[Dictionary] = []
 var last_result: RunResult
 ## the run before last_result, so the report can say whether the redesign helped
 var previous_result: RunResult
+## The designs that flew last_result and previous_result. Copies, since the
+## design screen keeps editing `design` in place.
+var last_design: MissionDesign
+var previous_design: MissionDesign
 ## The mission flown on the operations screen. It is null before launch.
 var mission: Mission
 ## Whether start_mission draws a failure plan. The same seed gives the same
@@ -38,6 +42,8 @@ func new_mission(p_scenario_id: StringName, p_player_count: int) -> void:
 	last_warnings.clear()
 	last_result = null
 	previous_result = null
+	last_design = null
+	previous_design = null
 	mission = null
 	baseline_result = null
 	role_owner.clear()
@@ -79,5 +85,7 @@ func finish_mission() -> void:
 	assert(mission != null and mission.state.done, "GameState: finish_mission before the mission ended")
 	previous_result = last_result
 	last_result = mission.state.result
+	previous_design = last_design
+	last_design = MissionDesign.from_dict(design.to_dict())
 	baseline_result = mission.baseline()
 
