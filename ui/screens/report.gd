@@ -34,6 +34,8 @@ func _ready() -> void:
 		for f in actual:
 			why.append(["%s: %s" % [Explain.factor(f), Explain.FACTOR_HINTS[f]], UiStyle.TEXT])
 		col.add_child(_card("What happened", why, "satellite"))
+	if GameState.baseline_result:
+		col.add_child(_card("Design vs. operations", _operations_lines(r, GameState.baseline_result, s), "camera"))
 	if not GameState.last_warnings.is_empty():
 		var notes: Array = GameState.last_warnings.map(func(w): return [Explain.warning(w), UiStyle.WARN])
 		col.add_child(_card("The design screen warned about", notes, "flag"))
@@ -99,6 +101,45 @@ func _power_lines(r: RunResult) -> Array:
 		out.append(["Safe mode %d times, %s in total" % [r.safe_entries, Explain.days(r.safe_time_s)], UiStyle.BAD])
 	else:
 		out.append(["Never needed Safe mode", UiStyle.GOOD])
+	return out
+
+
+func _operations_lines(r: RunResult, base: RunResult, s: Scenario) -> Array:
+	var cmp := Outcome.compare_runs(r, base, s)
+	if not cmp["intervened"]:
+		return [["You changed nothing in flight, so this is the design's own result.", UiStyle.TEXT]]
+	const SHOWN := 6
+	var out: Array = [["Your changes in flight:", UiStyle.TEXT]]
+	for c in r.commands.slice(0, SHOWN):
+		out.append(["  " + Explain.command(c), UiStyle.CYAN])
+	if r.commands.size() > SHOWN:
+		out.append(["  and %d more" % (r.commands.size() - SHOWN), UiStyle.MUTED])
+
+	out.append(["Compared with the same design left alone:", UiStyle.TEXT])
+	var sent: Dictionary = cmp["delivered_bits"]
+	match sent["verdict"]:
+		&"more":
+			out.append(["Your operations sent home %s more (%s instead of %s)." % [Explain.mb(sent["diff"]), Explain.mb(sent["operated"]), Explain.mb(sent["baseline"])], UiStyle.GOOD])
+		&"less":
+			out.append(["Your changes cost %s of data sent home (%s instead of %s)." % [Explain.mb(-float(sent["diff"])), Explain.mb(sent["operated"]), Explain.mb(sent["baseline"])], UiStyle.BAD])
+		_:
+			out.append(["Data sent home: no real difference (%s)." % Explain.mb(sent["operated"]), UiStyle.MUTED])
+	var lost: Dictionary = cmp["discarded_bits"]
+	if lost["verdict"] != &"same":
+		out.append(["Thrown away: %s instead of %s." % [Explain.mb(lost["operated"]), Explain.mb(lost["baseline"])], UiStyle.GOOD if lost["verdict"] == &"less" else UiStyle.BAD])
+	var safe: Dictionary = cmp["safe_time_s"]
+	if safe["verdict"] != &"same":
+		out.append(["Time in Safe mode: %s instead of %s." % [Explain.days(safe["operated"]), Explain.days(safe["baseline"])], UiStyle.GOOD if safe["verdict"] == &"less" else UiStyle.BAD])
+	var done: Dictionary = cmp["completed"]
+	if done["operated"] != done["baseline"]:
+		var text := "Your operations kept the spacecraft alive; left alone it would have been lost." if done["operated"] \
+				else "The spacecraft was lost; left alone it would have finished the mission."
+		out.append([text, UiStyle.GOOD if done["operated"] else UiStyle.BAD])
+	var met: Dictionary = cmp["objectives_met"]
+	if met["operated"] != met["baseline"]:
+		var text := "The goal was met thanks to your operations; the design alone would have missed it." if met["operated"] \
+				else "The design alone would have met the goal; your changes made it miss."
+		out.append([text, UiStyle.GOOD if met["operated"] else UiStyle.BAD])
 	return out
 
 

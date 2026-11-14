@@ -29,6 +29,8 @@ var safe_entries := 0
 
 ## [{t_s, kind (&"safe_enter" | &"safe_exit" | &"power_lost"), energy_j}]
 var events: Array[Dictionary] = []
+## the player's in-flight changes, [{t_s, control, value}], in the order made
+var commands: Array[Dictionary] = []
 
 
 func step_count() -> int:

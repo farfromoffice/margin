@@ -51,12 +51,54 @@ func test_full_flow_reaches_the_report() -> void:
 	await wait_process_frames(2)
 	var run: Control = app.current
 	assert_eq(run.name, "run")
-	assert_not_null(GameState.last_result)
-	run._set_progress(1.0)
+	assert_not_null(GameState.mission)
+	assert_true(run._report.disabled, "no report while the mission flies")
+	run._finish_now()
 	assert_false(run._report.disabled)
+	assert_not_null(GameState.last_result)
+	assert_not_null(GameState.baseline_result)
 	var report: Control = await _go(&"report")
 	assert_eq(report.name, "report")
 	assert_eq(GameState.prediction, [&"power"] as Array[StringName])
+
+
+func _launch() -> Control:
+	_reference_design()
+	GameState.start_mission()
+	return await _go(&"run")
+
+
+func test_operations_clock_runs_and_auto_pauses_on_a_pass_with_the_radio_off() -> void:
+	var run: Control = await _launch()
+	var m: Mission = GameState.mission
+	# the screen also ticks on the frames GUT waited through; pausing and
+	# resuming clears any part step so the next second is measured exactly
+	run._set_speed(0)
+	run._set_speed(1)
+	var before := m.state.step
+	run._process(1.0)
+	assert_eq(m.state.step - before, 240, "1x: 1 s of real time is 4 mission hours")
+	run._radio.button_pressed = false
+	run._process(6.0)
+	assert_true(run._clock.paused, "the next pass stops the clock")
+	assert_true(run._banner.get_parent().visible)
+	assert_gt(m.state.contact_starts, 0)
+	var at := m.state.step
+	run._process(1.0)
+	assert_eq(m.state.step, at, "paused means paused")
+
+
+func test_in_flight_change_reaches_the_report() -> void:
+	var run: Control = await _launch()
+	run._process(0.5)
+	run._duty.value = 0.6
+	assert_eq(GameState.mission.state.result.commands.size(), 1)
+	run._finish_now()
+	assert_eq(GameState.last_result.commands.size(), 1)
+	var report: Control = await _go(&"report")
+	var texts := report.find_children("*", "Label", true, false).map(func(l): return l.text)
+	assert_true(texts.any(func(t): return t.contains("camera on 60 %")), "the change is listed")
+	assert_true(texts.any(func(t): return t.contains("left alone")), "and compared with the untouched design")
 
 
 func test_picking_a_part_replaces_the_old_one() -> void:

@@ -171,6 +171,69 @@ static func days(seconds: Variant) -> String:
 	return "%.1f days" % d if d >= 1.0 else "%.1f hours" % (d * 24.0)
 
 
+## "Day 4, 06:10", mission elapsed time
+static func mission_time(t_s: float) -> String:
+	var day := int(t_s / 86400.0) + 1
+	var in_day := fmod(t_s, 86400.0)
+	return "Day %d, %02d:%02d" % [day, int(in_day / 3600.0), int(fmod(in_day, 3600.0) / 60.0)]
+
+
+const PAUSE_NAMES := {
+	AutoPause.LOW_BATTERY: "Battery low",
+	AutoPause.STORAGE_HIGH: "Memory 80 % full",
+	AutoPause.CONTACT_BEGIN: "Pass begins, radio off",
+	AutoPause.SAFE_ENTER: "Safe mode entered",
+}
+
+const PAUSE_REASONS := {
+	AutoPause.LOW_BATTERY: "The battery is getting low. Safe mode will switch the camera off soon unless the camera or the radio uses less.",
+	AutoPause.STORAGE_HIGH: "The memory is 80 % full. When it is full, new pictures are thrown away.",
+	AutoPause.CONTACT_BEGIN: "A ground station is in view and the radio is off. Switch it on to send pictures home during this pass.",
+	AutoPause.SAFE_ENTER: "The battery ran low and the spacecraft went into Safe mode.",
+}
+
+
+static func pause_reasons(fired: Array[StringName]) -> String:
+	return " ".join(fired.map(func(k): return PAUSE_REASONS.get(k, String(k))))
+
+
+static func command(c: Dictionary) -> String:
+	var what := ""
+	match c["control"]:
+		Controls.DUTY_CYCLE:
+			what = "camera on %d %% of the time" % roundi(float(c["value"]) * 100.0)
+		Controls.RADIO_ENABLED:
+			what = "radio on" if c["value"] else "radio off"
+		_:
+			what = "%s = %s" % [c["control"], c["value"]]
+	return "%s: %s" % [mission_time(float(c["t_s"])), what]
+
+
+## Lines for Warnings.forecast(). Everything here is an average, so every
+## time reads as "about".
+static func forecast(f: Dictionary, s: SimState) -> Array[String]:
+	var lines: Array[String] = []
+	var net := float(f["energy_per_orbit_j"])
+	lines.append("Power per orbit: %s%s" % ["+" if net >= 0.0 else "", wh(net)])
+	lines.append("Data per day: %s made, %s can be sent" % [mb(f["generated_bits_per_day"]), mb(f["sendable_bits_per_day"])])
+	var remaining := float(f["remaining_s"])
+	var full := float(f["storage_full_in_s"])
+	if s.stored_bits > 0.0 and full == 0.0:
+		lines.append("Memory: full now")
+	elif full < remaining:
+		lines.append("Memory full in about %s" % days(full))
+	else:
+		lines.append("Memory: does not fill before the end")
+	var safe := float(f["safe_mode_in_s"])
+	if s.mode == RunResult.Mode.SAFE:
+		lines.append("Safe mode: in it now")
+	elif safe < remaining:
+		lines.append("Safe mode in about %s" % days(safe))
+	else:
+		lines.append("Safe mode: not expected")
+	return lines
+
+
 static func _thousands(v: float) -> String:
 	var sign := "-" if v < 0.0 else ""
 	var s := str(absi(int(round(v))))
