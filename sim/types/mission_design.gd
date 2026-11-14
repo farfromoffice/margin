@@ -4,8 +4,9 @@ extends RefCounted
 ## numbers come from Catalog, so a saved design stays small and shareable.
 
 var scenario_id: StringName = &""
-## requirement id -> chosen level, e.g. {&"resolution_m": 30}
-var requirements: Dictionary = {}
+## requirement id -> chosen level, e.g. {&"resolution_m": 30.0}. Always float:
+## JSON has no int. Anything else would change type on save and load.
+var requirements: Dictionary[StringName, float] = {}
 var launcher_id: StringName = &""
 var orbit_id: StringName = &""
 ## bus parts (structure, power, battery, comms, obc, adcs, propulsion)
@@ -31,9 +32,7 @@ func to_dict() -> Dictionary:
 static func from_dict(d: Dictionary) -> MissionDesign:
 	var out := MissionDesign.new()
 	out.scenario_id = StringName(str(d.get("scenario_id", "")))
-	var req: Variant = d.get("requirements", {})
-	if req is Dictionary:
-		out.requirements = req.duplicate(true)
+	out.requirements = _to_levels(d.get("requirements", {}))
 	out.launcher_id = StringName(str(d.get("launcher_id", "")))
 	out.orbit_id = StringName(str(d.get("orbit_id", "")))
 	out.component_ids = _to_names(d.get("component_ids", []))
@@ -55,4 +54,15 @@ static func _to_names(value: Variant) -> Array[StringName]:
 		for v in value:
 			if v is String or v is StringName:
 				out.append(StringName(v))
+	return out
+
+
+## Non numeric values are dropped, same as bad ids above.
+static func _to_levels(value: Variant) -> Dictionary[StringName, float]:
+	var out: Dictionary[StringName, float] = {}
+	if value is Dictionary:
+		for k in value:
+			var v: Variant = value[k]
+			if v is int or v is float:
+				out[StringName(str(k))] = float(v)
 	return out

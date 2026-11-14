@@ -14,8 +14,8 @@ var max_mass_kg := 0.0
 var allowed_orbit_ids: Array[StringName] = []
 ## the resources the UI should highlight for this mission
 var critical_resources: Array[StringName] = []
-## goal id -> threshold, e.g. {&"science": 100, &"data_downlinked_mb": 5000}
-var objectives: Dictionary = {}
+## goal id -> threshold, e.g. {&"science": 100.0, &"data_downlinked_mb": 5000.0}
+var objectives: Dictionary[StringName, float] = {}
 var sandbox := false
 
 
@@ -30,9 +30,7 @@ static func from_dict(d: Dictionary) -> Scenario:
 	s.max_mass_kg = maxf(float(d.get("max_mass_kg", 0.0)), 0.0)
 	s.allowed_orbit_ids = _to_names(d.get("allowed_orbit_ids", []))
 	s.critical_resources = _to_names(d.get("critical_resources", []))
-	var obj: Variant = d.get("objectives", {})
-	if obj is Dictionary:
-		s.objectives = obj.duplicate(true)
+	s.objectives = _to_thresholds(d.get("objectives", {}))
 	s.sandbox = bool(d.get("sandbox", false))
 	return s
 
@@ -42,4 +40,15 @@ static func _to_names(value: Variant) -> Array[StringName]:
 	if value is Array:
 		for v in value:
 			out.append(StringName(str(v)))
+	return out
+
+
+## JSON numbers arrive as float already; non numeric thresholds are dropped.
+static func _to_thresholds(value: Variant) -> Dictionary[StringName, float]:
+	var out: Dictionary[StringName, float] = {}
+	if value is Dictionary:
+		for k in value:
+			var v: Variant = value[k]
+			if v is int or v is float:
+				out[StringName(str(k))] = float(v)
 	return out

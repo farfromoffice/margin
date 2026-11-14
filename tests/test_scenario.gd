@@ -8,6 +8,12 @@ func test_values_are_clamped() -> void:
 	assert_eq(s.budget_kusd, 0.0)
 
 
+func test_objective_thresholds_become_float() -> void:
+	var s := Scenario.from_dict({"id": "x", "objectives": {"science": 100, "label": "x"}})
+	assert_eq(s.objectives.keys(), [&"science"])
+	assert_typeof(s.objectives[&"science"], TYPE_FLOAT)
+
+
 func test_catalog_has_sandbox() -> void:
 	var s := Catalog.get_scenario(&"sandbox")
 	assert_not_null(s)
