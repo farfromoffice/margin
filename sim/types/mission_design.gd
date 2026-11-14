@@ -13,6 +13,9 @@ var orbit_id: StringName = &""
 var component_ids: Array[StringName] = []
 var instrument_ids: Array[StringName] = []
 var ground_station_ids: Array[StringName] = []
+## share of each step the instrument is on, 0..1. Averaged over every step,
+## not tied to sunlight.
+var instrument_duty_cycle := 1.0
 
 
 func to_dict() -> Dictionary:
@@ -24,6 +27,7 @@ func to_dict() -> Dictionary:
 		"component_ids": _to_strings(component_ids),
 		"instrument_ids": _to_strings(instrument_ids),
 		"ground_station_ids": _to_strings(ground_station_ids),
+		"instrument_duty_cycle": instrument_duty_cycle,
 	}
 
 
@@ -38,6 +42,9 @@ static func from_dict(d: Dictionary) -> MissionDesign:
 	out.component_ids = _to_names(d.get("component_ids", []))
 	out.instrument_ids = _to_names(d.get("instrument_ids", []))
 	out.ground_station_ids = _to_names(d.get("ground_station_ids", []))
+	# older saves have no duty cycle, those ran the instrument all the time
+	var duty: Variant = d.get("instrument_duty_cycle", 1.0)
+	out.instrument_duty_cycle = clampf(float(duty), 0.0, 1.0) if (duty is int or duty is float) else 1.0
 	return out
 
 

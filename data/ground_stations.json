@@ -1,13 +1,41 @@
 [
   {
-    "id": "example_station",
-    "name": "Example ground station",
+    "id": "svalbard",
+    "name": "Svalbard, Norway",
     "network": "near_earth",
+    "latitude_deg": 78.23,
+    "longitude_deg": 15.39,
+    "altitude_km": 0.5,
     "min_elevation_deg": 10,
-    "cost_kusd_per_pass": 0.0,
-    "g_over_t_dbk": 0.0,
-    "source": "",
-    "provenance": "fictional",
-    "placeholder": true
+    "cost_kusd_per_pass": 1.0,
+    "source": "NASA Near Space Network, Svalbard Ground Station (SGS) https://www.nasa.gov/directorates/somd/space-communications-navigation-program/near-space-network/ ; coordinates rounded",
+    "provenance": "approximation",
+    "provenance_fields": { "cost_kusd_per_pass": "fictional", "min_elevation_deg": "approximation" }
+  },
+  {
+    "id": "fairbanks",
+    "name": "Fairbanks, Alaska",
+    "network": "near_earth",
+    "latitude_deg": 64.86,
+    "longitude_deg": -147.85,
+    "altitude_km": 0.2,
+    "min_elevation_deg": 10,
+    "cost_kusd_per_pass": 0.6,
+    "source": "NASA Near Space Network, Alaska Satellite Facility (ASF) https://www.nasa.gov/directorates/somd/space-communications-navigation-program/near-space-network/ ; coordinates rounded",
+    "provenance": "approximation",
+    "provenance_fields": { "cost_kusd_per_pass": "fictional", "min_elevation_deg": "approximation" }
+  },
+  {
+    "id": "wallops",
+    "name": "Wallops, Virginia",
+    "network": "near_earth",
+    "latitude_deg": 37.92,
+    "longitude_deg": -75.48,
+    "altitude_km": 0.0,
+    "min_elevation_deg": 10,
+    "cost_kusd_per_pass": 0.4,
+    "source": "NASA Near Space Network, Wallops Ground Station (WGS) https://www.nasa.gov/directorates/somd/space-communications-navigation-program/near-space-network/ ; coordinates rounded",
+    "provenance": "approximation",
+    "provenance_fields": { "cost_kusd_per_pass": "fictional", "min_elevation_deg": "approximation" }
   }
 ]

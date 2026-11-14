@@ -13,16 +13,16 @@ Hackathon: 14 to 15 November 2026, 48 hours. Hours count from kickoff.
 
 ## Phase 1 · Core simulation (3 to 14 h)
 
-- [ ] Data schema: unit suffixes, `provenance` labels, `safe_power_w`; `Catalog` converts to SI at load
-- [ ] Orbit table for 2–3 orbits: eclipse fraction and contact windows from GMAT, assumptions in RESEARCH.md
-- [ ] Orbit timeline: period from `T = 2π√(a³/μ)`, eclipse and contact intervals, per-step `{sunlit, contact}`
-- [ ] 60 s simulation loop, duration from the scenario
-- [ ] Power and operating modes: Normal / Safe with enter and exit thresholds, mission loss at zero charge in Safe
-- [ ] Data chain: generation, storage, downlink, overflow discard; `generated = delivered + discarded + stored` tested
-- [ ] Launch check: mass, orbit reachability, budget
-- [ ] Design-time warnings: energy per orbit, data generated vs deliverable per day
-- [ ] `DayState` updated: operating mode, safe-mode time, data totals, mode events, one end reason
-- [ ] Wildfire Watch catalog: at most 3 options per category, every value labelled; cost model still open
+- [x] Data schema: unit suffixes, `provenance` labels, `safe_power_w`; `Catalog` converts to SI at load
+- [x] Orbit table for 2–3 orbits: eclipse fraction and contact windows from GMAT, assumptions in RESEARCH.md
+- [x] Orbit timeline: period from `T = 2π√(a³/μ)`, eclipse and contact intervals, per-step `{sunlit, contact}`
+- [x] 60 s simulation loop, duration from the scenario
+- [x] Power and operating modes: Normal / Safe with enter and exit thresholds, mission loss at zero charge in Safe
+- [x] Data chain: generation, storage, downlink, overflow discard; `generated = delivered + discarded + stored` tested
+- [x] Launch check: mass, orbit reachability, budget
+- [x] Design-time warnings: energy per orbit, data generated vs deliverable per day
+- [x] `DayState` updated: operating mode, safe-mode time, data totals, mode events, one end reason
+- [x] Wildfire Watch catalog: at most 3 options per category, every value labelled; cost model still open
 
 ## Phase 2 · First playable (14 to 24 h)
 

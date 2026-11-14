@@ -1,6 +1,6 @@
 # Design
 
-Simulation contracts: data formats, state and rules the code and the research data must agree on. **Draft**: nothing here is implemented yet. Open questions are listed at the end; do not build on them until they are settled.
+Simulation contracts: data formats, state and rules the code and the research data must agree on. Implemented in `sim/` (Phase 1). Open questions are listed at the end with the default the code uses until the team settles them.
 
 ## Pipeline
 
@@ -23,7 +23,16 @@ orbit data + stations -> OrbitTimeline (eclipse and contact intervals)
 
 ## Units
 
-SI inside the simulation: s, W, J, bit, kg. Every identifier carries its unit as a suffix (`energy_j`, `rate_bps`). Data files may use other units only with a stating suffix (`capacity_wh`); `SimInput` converts once. "MB" in the UI means 10⁶ bytes.
+SI inside the simulation: s, W, J, bit, kg. Every identifier carries its unit as a suffix (`energy_j`, `rate_bps`). Data files may use other units only with a stating suffix (`capacity_wh`); `Catalog` adds an SI twin at load (`capacity_j`) and keeps the original for the UI. `SimInput` reads only the SI fields. "MB" in the UI means 10⁶ bytes.
+
+| Data suffix | SI field | Factor |
+|---|---|---|
+| `_wh` | `_j` | 3600 |
+| `_km` | `_m` | 1000 |
+| `_days` | `_s` | 86400 |
+| `_bytes` | `_bits` | 8 |
+| `_mb` | `_bits` | 8·10⁶ |
+| `_kbps`, `_mbps` | `_bps` | 10³, 10⁶ |
 
 ## Orbit data (`orbits.json`)
 
@@ -36,6 +45,8 @@ Added fields per orbit:
 | `reference_duration_s` | number | length of the GMAT window the contact data covers |
 | `contacts_s` | object | ground station id → list of `[start_s, end_s]` pairs, relative to the window start, sorted, non-overlapping |
 | `gmat_case` | string | id of the GMAT run in RESEARCH.md (epoch, Sun angle, minimum elevation) |
+
+`tools/gmat/build_orbits.py` writes the last four fields from GMAT runs; ground stations carry `latitude_deg`, `longitude_deg`, `altitude_km` for it.
 
 Constants: `μ = 3.986004418e14 m³/s²`, `R_earth = 6378137 m`.
 
@@ -63,15 +74,15 @@ Resolved from `MissionDesign`, `Scenario` and `Catalog` before the run. Everythi
 |---|---|
 | `duration_s` | scenario `duration_days` |
 | `dt_s` | 60, fixed |
-| `solar_power_w` | sum of solar `generated_w_1au` (see open question 2) |
-| `bus_power_w`, `bus_safe_power_w` | sums of `power_w` / `safe_power_w` over bus components except comms and instruments |
+| `solar_power_w` | sum of solar `generated_w_1au × sunlit_factor` |
+| `bus_power_w`, `bus_safe_power_w` | sums of `power_w` / `safe_power_w` over bus components except solar, comms and instruments |
 | `instrument_power_w`, `instrument_rate_bps` | instrument entries |
-| `duty_cycle` | `MissionDesign.instrument_duty_cycle`, 0..1 (new field) |
-| `radio_tx_power_w`, `radio_idle_power_w` | comms `power_w` / `safe_power_w` |
-| `downlink_rate_bps` | comms `rate_bps` |
-| `battery_capacity_j` | battery `capacity_wh` × 3600 |
-| `safe_enter_fraction`, `safe_exit_fraction` | battery entry; exit > enter |
-| `storage_capacity_bits` | obc `storage_bytes` × 8 (new field) |
+| `duty_cycle` | `MissionDesign.instrument_duty_cycle`, 0..1, default 1 |
+| `radio_tx_power_w`, `radio_idle_power_w` | comms `power_w` / `safe_power_w` (summed if several) |
+| `downlink_rate_bps` | comms `rate_bps` (fastest if several: one radio talks) |
+| `battery_capacity_j` | sum of battery `capacity_j` |
+| `safe_enter_fraction`, `safe_exit_fraction` | first battery entry; exit > enter |
+| `storage_capacity_bits` | sum of obc `storage_bits` |
 | `initial_energy_j` | `battery_capacity_j` (starts full) |
 
 ## State
@@ -110,12 +121,12 @@ Battery depletion ends the mission in either mode. With sane thresholds Normal m
 ```text
 end_reason: COMPLETED | POWER_LOST, end_t_s
 series (one value per step, PackedFloat64Array / PackedByteArray):
-    energy_j, stored_bits, delivered_bits (cumulative), mode
+    energy_j, stored_bits, delivered_bits and discarded_bits (cumulative), mode
 totals: as in State
 events: [{t_s, kind: safe_enter | safe_exit | power_lost, energy_j}]
 ```
 
-At 30 days that is 43,200 steps per series. The UI downsamples for charts; `DayState` becomes a daily summary derived from the series (energy min/end, data delivered and discarded that day, safe time, events), replacing its current fields.
+At 30 days that is 43,200 steps per series. The UI downsamples for charts. `RunResult.daily()` folds the series into one `DayState` per day: `energy_min_j`, `energy_end_j`, `stored_bits_end`, `delivered_bits` and `discarded_bits` of that day, `safe_time_s`, `mode_end`, the day's events.
 
 ## LaunchCheck
 
@@ -123,12 +134,15 @@ Runs on the design before simulation. Returns a list of violations `{kind, value
 
 | Kind | Rule |
 |---|---|
+| `missing_part` | no structure, solar, battery, comms, obc, instrument, ground station or launcher; `value` names it |
+| `unknown_component` | a chosen id is not in the catalog |
+| `orbit_not_allowed` | scenario `allowed_orbit_ids` is not empty and lacks the orbit |
 | `orbit_unreachable` | launcher `capacity_kg` has no entry for the orbit |
 | `over_launcher_capacity` | total mass > `capacity_kg[orbit_id]` |
 | `over_scenario_mass` | total mass > scenario `max_mass_kg` (when > 0) |
-| `over_budget` | total cost > scenario budget (which costs count: open question 5) |
+| `over_budget` | hardware plus launcher cost > scenario `budget_kusd` (when > 0) |
 
-Total mass is the sum of all chosen components and instruments.
+Total mass is the sum of all chosen components and instruments. For kinds without a number `value` holds the id or category and `limit` is null.
 
 ## Warnings
 
@@ -138,7 +152,7 @@ Computed before the run from `SimInput` and the timeline. The prediction screen 
 |---|---|
 | `orbit_energy_negative` | Normal-mode energy over one orbit at the given eclipse fraction is negative, using average contact time per orbit |
 | `downlink_short` | data generated per day > `downlink_rate_bps` × average contact seconds per day |
-| `storage_fills` | backlog per day > 0 and storage fills before mission end |
+| `storage_fills` | backlog per day > 0 and storage fills before mission end; `value` is the fill time in s |
 
 ## Code layout
 
@@ -150,14 +164,17 @@ sim/launch_check.gd      LaunchCheck.check(design, scenario, catalog) -> violati
 sim/warnings.gd          Warnings.compute(input, timeline) -> warnings
 sim/types/run_result.gd  RunResult
 sim/types/day_state.gd   daily summary
+tools/gmat/              GMAT case generator for orbits.json
 ```
 
 ## Open questions
 
-1. **Eclipse source.** Synthetic placement from `eclipse_fraction` (current rule) ignores the real phase between eclipses and contacts. GMAT can export eclipse intervals the same way as contacts, which would make both lists identical in form and drop the synthetic step. Needs a team decision.
-2. **Solar generation.** `generated_w_1au` is output facing the Sun. Average output over a sunlit arc depends on pointing; a fixed orientation factor (`approximation`) is likely needed. Value and source open.
-3. **Storage field.** `storage_bytes` on the obc component is a schema addition; data/README needs it.
-4. **Duty cycle.** Averaged over every step (current rule) vs. instrument on only in sunlight (realistic for visible imagers, not for thermal). Depends on the instrument type chosen in research.
-5. **Budget scope.** Hardware and launcher only, or also ground station cost per pass (known only after the run). Tied to the open cost model.
-6. **Objective evaluation.** How `delivered_bits` maps to the scenario objective (bits, or observations of a fixed size) depends on the results decision.
-7. **Performance.** 43,200 steps is assumed cheap in GDScript; measure once the loop exists.
+Each one lists the default the code uses today.
+
+1. **Eclipse source.** Synthetic placement from `eclipse_fraction` (current rule) ignores the real phase between eclipses and contacts. GMAT can export eclipse intervals the same way as contacts (the generator already runs an `EclipseLocator`), which would make both lists identical in form and drop the synthetic step. Needs a team decision. *Default: synthetic.*
+2. **Solar generation.** *Settled:* each solar entry has a `sunlit_factor` (0..1, `approximation`), the average share of `generated_w_1au` delivered over a sunlit arc. Values and reasoning in RESEARCH.md.
+3. **Storage field.** *Settled:* `storage_bytes` on obc entries, documented in data/README.md.
+4. **Duty cycle.** Averaged over every step vs. instrument on only in sunlight (realistic for visible imagers, not for thermal). *Default: averaged.*
+5. **Budget scope.** Hardware and launcher only, or also ground station cost per pass (known only after the run). *Default: hardware and launcher.* Tied to the open cost model.
+6. **Objective evaluation.** How `delivered_bits` maps to the scenario objective (bits, or observations of a fixed size) depends on the results decision. Wildfire Watch carries a placeholder `delivered_mb` objective.
+7. **Performance.** *Settled:* a 30 day run (43,200 steps) takes about 0.2 s in a debug build with invariant checks on.

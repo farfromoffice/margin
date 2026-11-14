@@ -1,16 +1,305 @@
 [
   {
-    "id": "example_solar_panel",
-    "name": "Example solar panel",
-    "category": "solar",
+    "id": "structure_3u",
+    "name": "3U CubeSat structure",
+    "category": "structure",
     "tier": "simple",
-    "mass_kg": 0.0,
+    "mass_kg": 0.34,
     "power_w": 0.0,
     "safe_power_w": 0.0,
-    "cost_kusd": 0.0,
-    "generated_w_1au": 0.0,
-    "source": "",
-    "provenance": "fictional",
-    "placeholder": true
+    "cost_kusd": 4.0,
+    "volume_u": 3,
+    "max_payload_kg": 5.66,
+    "source": "EnduroSat 3U structure, 340 g https://satsearch.co/products/endurosat-3u-platform ; 6 kg limit from CubeSat Design Specification Rev. 14.1",
+    "provenance": "documented",
+    "provenance_fields": {
+      "cost_kusd": "fictional",
+      "max_payload_kg": "approximation"
+    }
+  },
+  {
+    "id": "structure_6u",
+    "name": "6U CubeSat structure",
+    "category": "structure",
+    "tier": "simple",
+    "mass_kg": 0.85,
+    "power_w": 0.0,
+    "safe_power_w": 0.0,
+    "cost_kusd": 7.0,
+    "volume_u": 6,
+    "max_payload_kg": 11.15,
+    "source": "EnduroSat 6U structure, 850 g https://satsearch.co/products/endurosat-6u-cubesat-structure ; 12 kg limit from 6U CubeSat Design Specification Rev. 1.0",
+    "provenance": "documented",
+    "provenance_fields": {
+      "cost_kusd": "fictional",
+      "max_payload_kg": "approximation"
+    }
+  },
+  {
+    "id": "solar_3u_body",
+    "name": "Body-mounted 3U panels",
+    "category": "solar",
+    "tier": "simple",
+    "mass_kg": 0.59,
+    "power_w": 0.0,
+    "safe_power_w": 0.0,
+    "cost_kusd": 12.0,
+    "generated_w_1au": 11.9,
+    "sunlit_factor": 0.9,
+    "source": "EnduroSat 3U solar panel, 8.4 W in LEO, 147 g each, four side panels https://endurosat.com/products/3u-solar-panel ; peak is two panels at 45 degrees, 8.4 x sqrt(2)",
+    "provenance": "approximation",
+    "provenance_fields": {
+      "cost_kusd": "fictional",
+      "generated_w_1au": "approximation",
+      "sunlit_factor": "approximation"
+    }
+  },
+  {
+    "id": "solar_3u_deployable",
+    "name": "3U double deployable array",
+    "category": "solar",
+    "tier": "simple",
+    "mass_kg": 0.45,
+    "power_w": 0.0,
+    "safe_power_w": 0.0,
+    "cost_kusd": 30.0,
+    "generated_w_1au": 25.2,
+    "sunlit_factor": 0.7,
+    "source": "EnduroSat 3U double deployable array, 25.2 W https://endurosat.com/products/3u-double-deployable-solar-array-2",
+    "provenance": "approximation",
+    "provenance_fields": {
+      "cost_kusd": "fictional",
+      "generated_w_1au": "documented",
+      "sunlit_factor": "approximation"
+    }
+  },
+  {
+    "id": "solar_6u_deployable",
+    "name": "6U deployable array",
+    "category": "solar",
+    "tier": "simple",
+    "mass_kg": 0.76,
+    "power_w": 0.0,
+    "safe_power_w": 0.0,
+    "cost_kusd": 45.0,
+    "generated_w_1au": 38.4,
+    "sunlit_factor": 0.7,
+    "source": "EnduroSat 6U deployable array, up to 38.4 W in LEO, 757 g single deployable https://www.endurosat.com/products/6u-deployable-solar-array/",
+    "provenance": "documented",
+    "provenance_fields": {
+      "cost_kusd": "fictional",
+      "sunlit_factor": "approximation"
+    }
+  },
+  {
+    "id": "battery_43wh",
+    "name": "4-cell battery pack, 43 Wh",
+    "category": "battery",
+    "tier": "simple",
+    "mass_kg": 0.27,
+    "power_w": 0.0,
+    "safe_power_w": 0.0,
+    "cost_kusd": 10.0,
+    "capacity_wh": 43.0,
+    "safe_enter_fraction": 0.3,
+    "safe_exit_fraction": 0.6,
+    "source": "GomSpace NanoPower BP4 datasheet, 43 Wh nominal https://gomspace.com/UserFiles/Subsystems/datasheet/gs-ds-nanopower-bp4_(DS_-_1013024_-_1_-_31)_-_1.pdf ; mass from four 48 g cells plus board",
+    "provenance": "approximation",
+    "provenance_fields": {
+      "cost_kusd": "fictional",
+      "capacity_wh": "documented",
+      "mass_kg": "approximation",
+      "safe_enter_fraction": "fictional",
+      "safe_exit_fraction": "fictional"
+    }
+  },
+  {
+    "id": "battery_100wh",
+    "name": "Large battery pack, 100 Wh",
+    "category": "battery",
+    "tier": "simple",
+    "mass_kg": 0.9,
+    "power_w": 0.0,
+    "safe_power_w": 0.0,
+    "cost_kusd": 25.0,
+    "capacity_wh": 100.0,
+    "safe_enter_fraction": 0.3,
+    "safe_exit_fraction": 0.6,
+    "source": "GomSpace NanoPower BPX 100 Wh https://gomspace.com/wp-content/uploads/2025/09/gs-ds-nanopower-BPX-100-Wh-1076870-1.1.0.pdf",
+    "provenance": "approximation",
+    "provenance_fields": {
+      "cost_kusd": "fictional",
+      "capacity_wh": "documented",
+      "mass_kg": "approximation",
+      "safe_enter_fraction": "fictional",
+      "safe_exit_fraction": "fictional"
+    }
+  },
+  {
+    "id": "radio_uhf",
+    "name": "UHF transceiver",
+    "category": "comms",
+    "tier": "simple",
+    "mass_kg": 0.2,
+    "power_w": 4.0,
+    "safe_power_w": 0.25,
+    "cost_kusd": 9.0,
+    "band": "uhf",
+    "rate_bps": 9600,
+    "source": "EnduroSat UHF Transceiver II, up to 19.6 kbps, 200 g https://www.endurosat.com/products/uhf-transceiver-ii/",
+    "provenance": "approximation",
+    "provenance_fields": {
+      "cost_kusd": "fictional",
+      "mass_kg": "documented",
+      "rate_bps": "approximation",
+      "power_w": "approximation",
+      "safe_power_w": "approximation"
+    }
+  },
+  {
+    "id": "radio_s_band",
+    "name": "S-band transmitter",
+    "category": "comms",
+    "tier": "simple",
+    "mass_kg": 0.25,
+    "power_w": 9.0,
+    "safe_power_w": 1.2,
+    "cost_kusd": 25.0,
+    "band": "s",
+    "rate_bps": 5000000,
+    "source": "EnduroSat S-band transmitter, 20 Mbps gross, 250 g (EnduroSat product catalogue 02/22 https://endurosat.com/wp-content/uploads/2022/02/Endurosat_Product_Catalogue_02_22.pdf); 9 W average from https://www.satcatalog.com/component/s-band-transmitter/",
+    "provenance": "approximation",
+    "provenance_fields": {
+      "cost_kusd": "fictional",
+      "mass_kg": "documented",
+      "rate_bps": "approximation",
+      "power_w": "documented",
+      "safe_power_w": "approximation"
+    }
+  },
+  {
+    "id": "radio_x_band",
+    "name": "X-band transmitter",
+    "category": "comms",
+    "tier": "simple",
+    "mass_kg": 0.4,
+    "power_w": 12.0,
+    "safe_power_w": 1.5,
+    "cost_kusd": 60.0,
+    "band": "x",
+    "rate_bps": 50000000,
+    "source": "EnduroSat X-band transmitter, 150 Mbps gross, 396 g https://endurosat.com/products/x-band-transmitter/ ; 12 W average from https://www.satcatalog.com/component/x-band-transmitter/",
+    "provenance": "approximation",
+    "provenance_fields": {
+      "cost_kusd": "fictional",
+      "mass_kg": "documented",
+      "rate_bps": "approximation",
+      "power_w": "documented",
+      "safe_power_w": "approximation"
+    }
+  },
+  {
+    "id": "obc_32gb",
+    "name": "Onboard computer, 32 GB",
+    "category": "obc",
+    "tier": "simple",
+    "mass_kg": 0.13,
+    "power_w": 0.9,
+    "safe_power_w": 0.9,
+    "cost_kusd": 6.0,
+    "storage_bytes": 32000000000,
+    "source": "EnduroSat onboard computer, 130 g, 2 x 16 GB storage https://www.endurosat.com/products/onboard-computer/ ; 0.9 W from https://www.satcatalog.com/component/onboard-computer-type-i/",
+    "provenance": "documented",
+    "provenance_fields": {
+      "cost_kusd": "fictional",
+      "safe_power_w": "approximation"
+    }
+  },
+  {
+    "id": "adcs_small",
+    "name": "3-axis ADCS, small wheels",
+    "category": "adcs",
+    "tier": "simple",
+    "mass_kg": 0.5,
+    "power_w": 1.0,
+    "safe_power_w": 0.6,
+    "cost_kusd": 40.0,
+    "source": "CubeSpace CubeADCS 3-Axis Small, 0.5 kg, 0.57 to 2.3 W https://satnow.com/products/adcs-systems/cubespace/46-1187-cubeadcs-3-axis",
+    "provenance": "approximation",
+    "provenance_fields": {
+      "cost_kusd": "fictional",
+      "mass_kg": "documented"
+    }
+  },
+  {
+    "id": "adcs_medium",
+    "name": "3-axis ADCS, medium wheels",
+    "category": "adcs",
+    "tier": "simple",
+    "mass_kg": 0.8,
+    "power_w": 1.5,
+    "safe_power_w": 0.6,
+    "cost_kusd": 60.0,
+    "source": "CubeSpace CubeADCS 3-Axis Medium, 0.8 kg, 0.57 to 2.3 W https://satnow.com/products/adcs-systems/cubespace/46-1187-cubeadcs-3-axis",
+    "provenance": "approximation",
+    "provenance_fields": {
+      "cost_kusd": "fictional",
+      "mass_kg": "documented"
+    }
+  },
+  {
+    "id": "camera_multispectral",
+    "name": "Multispectral camera",
+    "category": "instrument",
+    "tier": "simple",
+    "mass_kg": 1.2,
+    "power_w": 5.8,
+    "safe_power_w": 0.0,
+    "cost_kusd": 150.0,
+    "data_rate_bps": 10000000,
+    "source": "Simera Sense MultiScape100, 1.2 kg, 5.8 W https://www.satcatalog.com/component/multiscape100-cis/ ; data rate is our estimate",
+    "provenance": "approximation",
+    "provenance_fields": {
+      "cost_kusd": "fictional",
+      "mass_kg": "documented",
+      "power_w": "documented",
+      "data_rate_bps": "approximation"
+    }
+  },
+  {
+    "id": "camera_thermal",
+    "name": "Uncooled thermal camera",
+    "category": "instrument",
+    "tier": "simple",
+    "mass_kg": 1.0,
+    "power_w": 5.0,
+    "safe_power_w": 0.0,
+    "cost_kusd": 120.0,
+    "data_rate_bps": 1000000,
+    "source": "Uncooled microbolometer imager in the 1 to 2 kg, 10 to 20 W 3U payload envelope, cf. OroraTech and TUBIN https://bib-pubdb1.desy.de/record/485889/files/TUBIN_initial_results_v05-compressed.pdf",
+    "provenance": "approximation",
+    "provenance_fields": {
+      "cost_kusd": "fictional",
+      "data_rate_bps": "approximation"
+    }
+  },
+  {
+    "id": "camera_fire_mwir",
+    "name": "Cooled fire-detection camera",
+    "category": "instrument",
+    "tier": "simple",
+    "mass_kg": 2.5,
+    "power_w": 17.0,
+    "safe_power_w": 0.0,
+    "cost_kusd": 400.0,
+    "data_rate_bps": 4000000,
+    "source": "Fraunhofer ERNST cooled MWIR payload, about 2.5 kg and up to 17 W https://publica-rest.fraunhofer.de/server/api/core/bitstreams/3ed473cf-59fc-4789-8344-b07ec7c3da26/content",
+    "provenance": "approximation",
+    "provenance_fields": {
+      "cost_kusd": "fictional",
+      "mass_kg": "documented",
+      "power_w": "documented",
+      "data_rate_bps": "approximation"
+    }
   }
 ]

@@ -1,16 +1,32 @@
 extends Node
 ## Read only view of everything in data/*.json. Load once at startup, then ask
 ## by id. Bad entries get skipped with a warning so one typo doesn't kill the game.
+## Fields with a non SI suffix (capacity_wh, altitude_km, ...) also get an SI twin
+## at load, so the sim only ever reads SI.
 
 const DATA_DIR := "res://data/"
 
 const REQUIRED := {
-	"components": ["id", "name", "category", "tier", "mass_kg", "power_w", "cost_kusd"],
-	"launchers": ["id", "name", "cost_kusd", "capacity_kg"],
-	"orbits": ["id", "name", "body"],
+	"components": ["id", "name", "category", "tier", "mass_kg", "power_w", "safe_power_w", "cost_kusd", "source", "provenance"],
+	"launchers": ["id", "name", "cost_kusd", "capacity_kg", "source", "provenance"],
+	"orbits": ["id", "name", "body", "source", "provenance"],
 	"scenarios": ["id", "title", "duration_days"],
-	"ground_stations": ["id", "name", "network"],
+	"ground_stations": ["id", "name", "network", "source", "provenance"],
 	"real_missions": ["id", "name", "orbit_id"],
+}
+
+const PROVENANCE: Array[String] = ["documented", "approximation", "fictional"]
+
+## non SI suffix -> [SI suffix, factor]. Longest suffix wins, so _mbps never
+## gets mistaken for _mb.
+const TO_SI := {
+	"_wh": ["_j", 3600.0],
+	"_km": ["_m", 1000.0],
+	"_days": ["_s", 86400.0],
+	"_bytes": ["_bits", 8.0],
+	"_mb": ["_bits", 8.0e6],
+	"_kbps": ["_bps", 1.0e3],
+	"_mbps": ["_bps", 1.0e6],
 }
 
 ## table name -> { id (StringName) -> Dictionary }
@@ -44,6 +60,30 @@ func get_scenario(id: StringName) -> Scenario:
 	return Scenario.from_dict(d) if not d.is_empty() else null
 
 
+## Adds an SI twin for every top level numeric field with a known non SI suffix.
+## The original stays, the UI shows it. Nested values (capacity_kg, contacts_s)
+## are left alone, they are SI already.
+static func add_si_fields(entry: Dictionary) -> void:
+	for key in entry.keys():
+		var v: Variant = entry[key]
+		if not (v is int or v is float):
+			continue
+		var suffix := _non_si_suffix(String(key))
+		if suffix.is_empty():
+			continue
+		var rule: Array = TO_SI[suffix]
+		var si_key := String(key).trim_suffix(suffix) + String(rule[0])
+		entry[si_key] = float(v) * float(rule[1])
+
+
+static func _non_si_suffix(key: String) -> String:
+	var best := ""
+	for suffix: String in TO_SI:
+		if key.ends_with(suffix) and suffix.length() > best.length():
+			best = suffix
+	return best
+
+
 func _load_table(table: String) -> Dictionary:
 	var out := {}
 	var path := DATA_DIR + table + ".json"
@@ -63,9 +103,13 @@ func _load_table(table: String) -> Dictionary:
 		if not missing.is_empty():
 			push_warning("Catalog: %s entry %s missing %s, skipped" % [table, entry.get("id", "?"), missing])
 			continue
+		if entry.has("provenance") and not str(entry["provenance"]) in PROVENANCE:
+			push_warning("Catalog: %s entry %s has unknown provenance %s, skipped" % [table, entry["id"], entry["provenance"]])
+			continue
 		var id := StringName(str(entry["id"]))
 		if out.has(id):
 			push_warning("Catalog: duplicate id %s in %s, keeping the first" % [id, table])
 			continue
+		add_si_fields(entry)
 		out[id] = entry
 	return out

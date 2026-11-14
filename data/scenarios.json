@@ -1,5 +1,28 @@
 [
   {
+    "id": "wildfire_watch",
+    "title": "Wildfire Watch",
+    "briefing": "Fires spread fast in summer. Build a small satellite that spots hot spots from orbit and sends the pictures home for a month.",
+    "difficulty": 1,
+    "duration_days": 30,
+    "budget_kusd": 1000,
+    "max_mass_kg": 12,
+    "allowed_orbit_ids": [
+      "leo_400",
+      "sso_550",
+      "sso_700"
+    ],
+    "critical_resources": [
+      "power",
+      "data",
+      "budget"
+    ],
+    "objectives": {
+      "delivered_mb": 20000
+    },
+    "sandbox": false
+  },
+  {
     "id": "sandbox",
     "title": "Sandbox",
     "briefing": "No limits, no goals. Build anything and see what happens.",

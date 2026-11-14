@@ -25,6 +25,12 @@ godot --headless -s addons/gut/gut_cmdln.gd  # run the tests (GUT, config in .gu
 
 On a fresh clone run `godot --headless --editor --quit` once first so Godot imports the project and registers class names.
 
+Orbit eclipse and contact data in `data/orbits.json` come from GMAT R2025a. After changing an orbit or a ground station, regenerate them (Python 3, no extra packages):
+
+```sh
+python3 tools/gmat/build_orbits.py /path/to/GMAT/R2025a/bin
+```
+
 Project docs:
 
 - [PROBLEM.md](PROBLEM.md): the challenge and how each item maps to a feature

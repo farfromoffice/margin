@@ -33,10 +33,10 @@ Status: ✅ done, 🟡 in progress, ❌ not started, ⏭ out of scope for the ha
 | Brief item | Margin feature | Status |
 |---|---|---|
 | Clear user interface | One screen per mission phase, margin panel always visible | ❌ |
-| Mission configuration system | Data driven catalog in `data/*.json` | ❌ |
+| Mission configuration system | Data driven catalog in `data/*.json` | 🟡 |
 | Resource management mechanisms | Margin rules in `sim/budget.gd` | ❌ |
 | Collaboration for up to four | Roles plus Review Board, launch locked until every role says Go | ❌ |
-| Simulation and evaluation | `sim/simulator.gd`, mission report | ❌ |
+| Simulation and evaluation | `sim/simulator.gd`, mission report | 🟡 |
 | Reward good engineering, efficiency, collaboration, objectives | `sim/scoring.gd` | ❌ |
 
 ### Suggested features
@@ -46,7 +46,7 @@ Status: ✅ done, 🟡 in progress, ❌ not started, ⏭ out of scope for the ha
 | Multiple scenarios | Wildfire Watch, Crop Scout, Lunar Ice Mapper, Red Relay | ❌ |
 | Random events | Solar storm, battery fade, ground station outage, launch slip, budget cut | ❌ |
 | Difficulty levels | Simple and advanced component catalogs, scenario difficulty multiplier | ❌ |
-| Realistic or simplified spacecraft models | Simplified models backed by CubeSat 101 numbers | ❌ |
+| Realistic or simplified spacecraft models | Simplified models backed by CubeSat 101 numbers | 🟡 |
 | Interactive spacecraft visualization | Spacecraft preview on the Design screen | ❌ |
 | Real time resource dashboard | Simulation screen gauges | ❌ |
 | Leaderboard | Local leaderboard | ❌ |
