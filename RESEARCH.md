@@ -93,27 +93,42 @@ The reference design is the one in `tests/test_wildfire_watch.gd`: 6U, 6U deploy
 
 | | Designs | Meet the goal | Cheapest that meets it |
 |---|---|---|---|
-| All | 15,120 | 26 % | 212 kUSD: 3U, body panels, X-band, thermal, no pointing system, free ISS launch, 100 % |
+| All | 15,120 | 21 % | 242 kUSD: 3U, body panels, X-band, multispectral, no pointing system, free ISS launch, 25 % |
 | UHF radio | 5,040 | 0 % | |
-| S-band radio | 5,040 | 14 % | 527 kUSD: thermal, rideshare SSO 550, 100 % |
-| X-band radio | 5,040 | 63 % | 212 kUSD |
-| Thermal camera | 5,040 | 16 % | 212 kUSD |
-| Multispectral camera | 5,040 | 33 % | 242 kUSD: X-band, ISS launch, 25 % |
-| Fire detection camera | 5,040 | 29 % | 492 kUSD: X-band, ISS launch, 25 % |
-| LEO 400 (ISS launch) | 7,560 | 15 % | 212 kUSD |
-| SSO 550 (rideshare) | 7,560 | 37 % | 527 kUSD |
-| 3U structure | 6,048 | 25 % | 212 kUSD |
-| 6U structure | 9,072 | 26 % | 215 kUSD |
+| S-band radio | 5,040 | 11 % | 557 kUSD: multispectral, no pointing system, rideshare SSO 550, 25 % |
+| X-band radio | 5,040 | 51 % | 242 kUSD |
+| Thermal camera | 5,040 | 11 % | 252 kUSD: X-band, small pointing system, ISS launch, 50 % |
+| Multispectral camera | 5,040 | 30 % | 242 kUSD |
+| Fire detection camera | 5,040 | 22 % | 510 kUSD: X-band, 3U deployable array, ISS launch, 50 % |
+| No pointing system | 5,040 | 11 % | 242 kUSD |
+| Small pointing system | 5,040 | 26 % | 252 kUSD |
+| Medium pointing system | 5,040 | 26 % | 272 kUSD |
+| LEO 400 (ISS launch) | 7,560 | 12 % | 242 kUSD |
+| SSO 550 (rideshare) | 7,560 | 30 % | 557 kUSD |
+| 3U structure | 6,048 | 20 % | 242 kUSD |
+| 6U structure | 9,072 | 21 % | 245 kUSD |
 
-The 6U deployable array fits only the 6U structure (`min_structure_u`). That removed 3,024 designs, every 3U structure carrying it, from the 18,144 the sweep flew before; the share that meets the goal went from 26.1 % to 25.9 %, and nothing else in the table moved by more than a point. The table before this sweep listed 12,096 designs and a 252 kUSD cheapest winner: it predates the designs without a pointing system.
+Since the pointing rule (`SimInput.UNPOINTED_SHARE`) a design without a pointing system meets the goal less than half as often as one with it, 11 % against 26 %; before, the two were the same and the pointing system was cost without benefit. The cheapest winner still flies without one: the multispectral camera makes so much data that a quarter of it still fills an X-band radio, and pointing cannot help a design that the radio limits. The thermal camera makes less, and its cheapest winner needs the pointing system. The table before this sweep had 26 % meeting the goal and a 212 kUSD cheapest winner.
+
+`tools/balance.gd -- count` counts the candidates the launch check rules out before anything flies, one per camera setting:
+
+| | Candidates |
+|---|---|
+| All tried | 11,340 |
+| Launchable | 3,780 |
+| Over budget | 6,804 |
+| 6U array on a 3U structure | 1,890 |
+| Both | 1,134 |
+| Over a launcher's mass limit | 0 |
 
 The reference design misses the goal at 10 % and 25 % camera time (32,342 and 80,856 MB) and meets it at 50 % (133,440 MB, downlink limited).
 
 What the sweep says, as input for the playtest:
 
-- **The budget never binds.** The most expensive launchable design costs 953 kUSD against a 1,000 kUSD budget, and the cheapest winner spends a quarter of it. Every cost is fictional, so this is the knob to turn if budget should matter.
+- **The budget only rules out the dedicated launcher.** Every one of its 6,804 candidates costs more than the 1,000 kUSD budget, and no other candidate does. Among the launchable designs it never decides anything: the most expensive costs 953 kUSD and the cheapest winner spends a quarter of the budget. Every cost is fictional, so this is the knob to turn if budget should matter.
+- **Mass never binds.** No candidate is over its launcher's mass limit.
 - **No design is ever lost.** Safe mode always catches the battery before zero, so power costs science but never the spacecraft. Losses only come from live failures.
-- **The structure still changes little.** It changes nothing in flight; its one effect is that only the 6U structure takes the 6U deployable array, and that array rarely decides the goal here (27.5 % of its designs meet it against 27.1 % with the 3U deployable). The launch check also enforces `max_payload_kg`, but the heaviest possible set of parts is 5.49 kg against the 3U frame's 5.66 kg, so that never binds.
+- **The structure still changes little.** It changes nothing in flight; its one effect is that only the 6U structure takes the 6U deployable array, and that array rarely decides the goal here (22.9 % of its designs meet it against 22.5 % with the 3U deployable). The launch check also enforces `max_payload_kg`, but the heaviest possible set of parts is 5.49 kg against the 3U frame's 5.66 kg, so that never binds.
 - **SSO 700 is out of reach.** Only the dedicated launcher flies there, at 7,500 kUSD.
 - **The UHF radio never wins**, which is the intended lesson: 9.6 kbit/s cannot move pictures.
 - Raising the goal makes the budget bind (above about 256,000 MB the free ISS launch cannot deliver enough), but it also rules out S-band, which the current goal keeps on purpose (DESIGN.md open question 6). The goal stays at 100,000 MB.

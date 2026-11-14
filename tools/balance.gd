@@ -8,7 +8,8 @@ extends SceneTree
 ## e.g. `-- 3/12` runs every twelfth design starting at the fourth; the header
 ## only comes out of shard 0.
 ## `-- count` flies nothing and prints how many candidate designs each launch check
-## rules out, one design per camera setting, overlaps counted for every check.
+## rules out, one design per camera setting, a design failing two checks counted
+## under both.
 
 const SCENARIO := &"wildfire_watch"
 const DUTIES: Array[float] = [0.1, 0.25, 0.5, 1.0]
@@ -18,7 +19,7 @@ var _shard := 0
 var _shards := 1
 var _n := 0
 var _count := false
-## launch check kind (or "launchable") -> designs, for -- count
+## launch check kind, "launchable" or "candidates" -> designs, for -- count
 var _tally := {}
 
 
@@ -62,7 +63,10 @@ func _sweep(catalog: Node) -> void:
 											d.launcher_id = StringName(launcher["id"])
 											d.orbit_id = StringName(orbit_id)
 											d.instrument_duty_cycle = duty
-											if not LaunchCheck.check(d, scenario, catalog).is_empty():
+											var violations := LaunchCheck.check(d, scenario, catalog)
+											if _count and duty == DUTIES[0]:
+												_add(violations)
+											if _count or not violations.is_empty():
 												continue
 											_n += 1
 											if _n % _shards != _shard:
@@ -74,14 +78,13 @@ func _sweep(catalog: Node) -> void:
 	quit()
 
 
-## _add counts a candidate once under each distinct check it fails or as launchable.
+## _add counts a candidate once under each check it fails or as launchable.
 func _add(violations: Array[Dictionary]) -> void:
-	var kinds := {}
+	var kinds := {"candidates": true}
 	for v in violations:
 		kinds[String(v["kind"])] = true
-	if kinds.is_empty():
+	if violations.is_empty():
 		kinds["launchable"] = true
-	kinds["candidates"] = true
 	for k in kinds:
 		_tally[k] = _tally.get(k, 0) + 1
 

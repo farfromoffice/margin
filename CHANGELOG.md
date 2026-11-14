@@ -4,6 +4,11 @@ All notable changes to Margin are listed here. The format follows [Keep a Change
 
 ## [Unreleased]
 
+### Changed
+
+- Flying without a pointing system now costs pictures: the camera faces the ground about a quarter of the time. The design screen and launch pad say so.
+- The report title says whether the goal was met, not only whether the spacecraft survived.
+
 ## [0.1.0] (2026-11-14)
 
 First playable release, built during the NASA Space Apps Challenge 2026.
