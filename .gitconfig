@@ -1,0 +1,14 @@
+# Shared repo settings. Enable once per clone with:
+#   git config --local include.path ../.gitconfig
+
+[commit]
+	template = .gitmessage
+
+[pull]
+	rebase = true
+
+[fetch]
+	prune = true
+
+[core]
+	autocrlf = input

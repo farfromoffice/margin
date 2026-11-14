@@ -1,0 +1,5 @@
+# type: subject
+#
+# One line, lowercase, imperative, no trailing period, no scope.
+# Types: feat, fix, docs, test, refactor, perf, chore, ci, build
+# Example: fix: keep end of step events on their own day

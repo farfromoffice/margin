@@ -4,7 +4,25 @@
 
 Margin is a space mission design game made for the NASA Space Apps Challenge 2026 ([Space Mission Design Game](https://www.spaceappschallenge.org/2026/challenges/space-mission-design-game/)). You design a small Earth-observation mission, predict what will limit it, run it and find out why.
 
-Download for Linux and Windows: _builds coming soon_
+## Download
+
+Get the latest build from the [releases page](https://github.com/farfromoffice/margin/releases/latest):
+
+- Linux: margin-linux-x86_64.zip, unzip it and run margin.x86_64
+- Windows: margin-windows-x86_64.zip, unzip it and run margin.exe
+
+## Gameplay
+
+[![Margin gameplay video](https://img.youtube.com/vi/WDuPJPrpfrY/maxresdefault.jpg)](https://www.youtube.com/watch?v=WDuPJPrpfrY)
+
+| | |
+|:---:|:---:|
+| ![Main menu](docs/screenshots/main_menu.jpg) | ![Design screen](docs/screenshots/design.jpg) |
+| Main menu | Pick the parts, watch the margins |
+| ![Launch pad](docs/screenshots/launch_pad.jpg) | ![Spacecraft in orbit](docs/screenshots/orbit.jpg) |
+| Preflight check on the pad | Separation and deployment in orbit |
+| ![Mission operations](docs/screenshots/operations.jpg) | ![Mission report](docs/screenshots/report.jpg) |
+| Fly the mission and handle failures | Read the report, then try again |
 
 ## Playing
 
@@ -32,22 +50,23 @@ python3 tools/gmat/build_orbits.py /path/to/GMAT/R2025a/bin
 
 Code layout: `sim/` is pure simulation logic (see DESIGN.md), `ui/` holds the screens (`ui/screens/`), the 3D launch site (`ui/launch/`), widgets, icons and fonts, `scenes/app.tscn` is the entry point and swaps screens on `EventBus.screen_requested`.
 
-Project docs:
-
-- [PROBLEM.md](PROBLEM.md): the challenge and how each item maps to a feature
-- [RESEARCH.md](RESEARCH.md): models, data sources, validation
-- [ROADMAP.md](ROADMAP.md): plan and progress
-- [data/README.md](data/README.md): data schema, units and provenance rules
+Contributions are welcome, see [CONTRIBUTING.md](CONTRIBUTING.md). Changes are listed in [CHANGELOG.md](CHANGELOG.md).
 
 ## Credits
 
 Fonts: [Orbitron](https://github.com/theleagueof/orbitron) and [Exo 2](https://github.com/googlefonts/Exo-2.0), SIL Open Font License 1.1, licenses in `ui/fonts/`. Icons, the Earth and sky shaders and the 3D spacecraft are made for this project.
+
+Interface sounds: [Kenney Interface Sounds](https://kenney.nl/assets/interface-sounds), CC0.
 
 Earth imagery: [Blue Marble: Next Generation](https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/) (December 2004, topography and bathymetry) and [Black Marble 2016](https://science.nasa.gov/earth/earth-observatory/earth-at-night/maps), NASA Earth Observatory. Both scaled to 2048x1024 in `ui/earth/`. The Wildfire Watch menu tile (`ui/earth/wildfire.jpg`) is a satellite image from NASA Earth Observatory.
 
 ## Team
 
 farfromoffice
+
+## License
+
+The code is released under the [MIT License](LICENSE). Fonts, NASA imagery, sounds and the bundled GUT addon keep their own licenses, listed under Credits and in their folders.
 
 ## Disclaimer
 
