@@ -61,16 +61,21 @@ static func forecast(input: SimInput, controls: Controls, timeline: OrbitTimelin
 static func projected_delivered_bits(input: SimInput, timeline: OrbitTimeline, controls: Controls, s: SimState) -> float:
 	var f := forecast(input, controls, timeline, s)
 	var remaining_days := float(f["remaining_s"]) / 86400.0
-	var working_days := remaining_days
+	var made_per_day := float(f["generated_bits_per_day"])
+	var sendable_per_day := float(f["sendable_bits_per_day"])
 	var safe_s := float(f["safe_mode_in_s"])
 	if s.mode == RunResult.Mode.SAFE:
 		safe_s = 0.0
-	if safe_s < float(f["remaining_s"]):
-		var before := safe_s / 86400.0
-		working_days = before + normal_share(input, timeline, float(f["energy_per_orbit_j"]), s) * (remaining_days - before)
-	var made := float(f["generated_bits_per_day"]) * working_days
-	var sendable := float(f["sendable_bits_per_day"]) * working_days
-	return s.result.delivered_bits_total + minf(sendable, s.stored_bits + made)
+	if safe_s >= float(f["remaining_s"]):
+		var made_all := made_per_day * remaining_days
+		return s.result.delivered_bits_total + minf(sendable_per_day * remaining_days, s.stored_bits + made_all)
+	var before := safe_s / 86400.0
+	var cycling := normal_share(input, timeline, float(f["energy_per_orbit_j"]), s) * (remaining_days - before)
+	var made_after := generated_bits_per_day(input, controls) if s.instrument_hung else made_per_day
+	var sent_before := minf(sendable_per_day * before, s.stored_bits + made_per_day * before)
+	var left := s.stored_bits + made_per_day * before - sent_before
+	var sent_after := minf(sendable_per_day * cycling, left + made_after * cycling)
+	return s.result.delivered_bits_total + sent_before + sent_after
 
 
 ## normal_share returns the share of time spent in Normal mode once the battery

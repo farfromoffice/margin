@@ -375,3 +375,18 @@ func test_factor_numbers_are_the_run_and_design_figures() -> void:
 	assert_almost_eq(n["sendable_per_day"], input.downlink_rate_bps * t.contact_s_per_day(), 1.0)
 	assert_eq(n["energy_per_orbit_j"], Warnings.orbit_energy_j(input, t))
 	assert_eq(n["storage_bits"], input.storage_capacity_bits)
+
+
+func test_projection_counts_a_frozen_camera_clearing_in_safe_mode() -> void:
+	for instrument_w in [40.0, 4.0]:
+		var input := _make_input(10.0)
+		input.instrument_power_w = instrument_w
+		var t := _timeline(input)
+		var hang: Array[Dictionary] = [{"t_s": 0.0, "kind": &"instrument_hang", "magnitude": 0.0}]
+		var m := _no_pauses(Mission.new(input, t, hang))
+		m.advance(1)
+		assert_true(m.state.instrument_hung)
+		var projected := Warnings.projected_delivered_bits(input, t, m.controls, m.state)
+		m.finish()
+		var actual := m.state.result.delivered_bits_total
+		assert_almost_eq(projected, actual, maxf(0.03 * actual, 1.0e6), "camera at %.0f W" % instrument_w)
