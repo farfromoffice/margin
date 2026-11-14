@@ -51,20 +51,6 @@ static func forecast(input: SimInput, controls: Controls, timeline: OrbitTimelin
 	}
 
 
-## break_even_duty returns the camera time at which an average orbit gains as much
-## energy as it spends with the current radio setting and the damage so far. Above
-## it the battery drains a little every orbit and Safe mode comes sooner or later.
-## 0 means the battery drains even with the camera off.
-static func break_even_duty(input: SimInput, timeline: OrbitTimeline, controls: Controls, s: SimState) -> float:
-	input = _as_damaged(input, s)
-	var c := _effective(controls, s)
-	c.duty_cycle = 0.0
-	var per_duty := input.instrument_power_w * timeline.period_s
-	if per_duty <= 0.0:
-		return 1.0
-	return clampf(orbit_energy_j(input, timeline, c) / per_duty, 0.0, 1.0)
-
-
 ## projected_delivered_bits estimates the data at home when the mission ends if the
 ## controls stay as they are: what is home already and what the radio can still
 ## send, capped by what is stored and what the camera still makes. When the battery
@@ -102,46 +88,36 @@ static func normal_share(input: SimInput, timeline: OrbitTimeline, net: float, s
 	return charge / (charge - net)
 
 
-## choices lists what the player can do about an auto-pause as {kind, value}:
-## kind &"duty" sets the camera time, &"radio" switches the radio, &"restart"
-## power-cycles the control named in value. Camera times are rounded down to the
-## slider's 5 % steps. The suggestion never overshoots the limit it is for.
-## Nothing here is applied; the operations screen shows each with its effect and
-## the player picks one or none.
+## choices lists the switches and repairs that answer an auto-pause, as
+## {kind, value}: &"radio" switches the radio, &"restart" power-cycles the
+## control named in value. The camera time is not among them on purpose: how far
+## to turn it down trades data against power or memory, and that is the player's
+## call, made on the slider with camera_step() and the effect lines to go by.
 static func choices(fired: Array[StringName], input: SimInput, timeline: OrbitTimeline, controls: Controls, s: SimState) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
-	var f := forecast(input, controls, timeline, s)
-	var damaged := s.failures_started.has(&"battery_fade") or s.failures_started.has(&"solar_loss")
-	var power_reason := AutoPause.LOW_BATTERY in fired or AutoPause.SAFE_ENTER in fired \
-			or (AutoPause.FAILURE in fired and damaged)
 	if AutoPause.FAILURE in fired:
 		if s.radio_hung:
 			out.append({"kind": &"restart", "value": Controls.RADIO_ENABLED})
 		if s.instrument_hung and controls.duty_cycle > 0.0:
 			out.append({"kind": &"restart", "value": Controls.DUTY_CYCLE})
-	if power_reason and float(f["energy_per_orbit_j"]) < 0.0:
-		var balanced := floorf(break_even_duty(input, timeline, controls, s) / DUTY_STEP + 1e-6) * DUTY_STEP
-		if balanced < controls.duty_cycle:
-			out.append({"kind": &"duty", "value": balanced})
-		if controls.radio_enabled:
-			var silent := Controls.new()
-			silent.duty_cycle = controls.duty_cycle
-			silent.radio_enabled = false
-			if orbit_energy_j(_as_damaged(input, s), timeline, silent) >= 0.0:
-				out.append({"kind": &"radio", "value": false})
+	var f := forecast(input, controls, timeline, s)
+	var power_short := float(f["energy_per_orbit_j"]) < 0.0
+	if power_short and controls.radio_enabled and (AutoPause.LOW_BATTERY in fired or AutoPause.SAFE_ENTER in fired):
+		out.append({"kind": &"radio", "value": false})
 	# a locked radio comes back on with its restart, switching it on does nothing
 	if (AutoPause.STORAGE_HIGH in fired or AutoPause.CONTACT_BEGIN in fired) and not controls.radio_enabled and not s.radio_hung:
 		out.append({"kind": &"radio", "value": true})
-	if AutoPause.STORAGE_HIGH in fired and controls.radio_enabled and not s.radio_hung and input.instrument_rate_bps > 0.0:
-		var keeps_up := float(f["sendable_bits_per_day"]) / (input.instrument_rate_bps * 86400.0)
-		keeps_up = floorf(keeps_up / DUTY_STEP + 1e-6) * DUTY_STEP
-		if keeps_up < controls.duty_cycle:
-			out.append({"kind": &"duty", "value": keeps_up})
-	var unique: Array[Dictionary] = []
-	for c in out:
-		if not unique.has(c):
-			unique.append(c)
-	return unique
+	return out
+
+
+## camera_step returns what 10 % of camera time is worth: the energy it uses per
+## average orbit and the data it makes per day. The auto-pause panel shows it as
+## the exchange rate between pictures and power or memory.
+static func camera_step(input: SimInput, timeline: OrbitTimeline) -> Dictionary:
+	return {
+		"energy_per_orbit_j": input.instrument_power_w * 0.1 * timeline.period_s,
+		"bits_per_day": input.instrument_rate_bps * 0.1 * 86400.0,
+	}
 
 
 ## _effective copies the controls the way the spacecraft acts on them. A hung

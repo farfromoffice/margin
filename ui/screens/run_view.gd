@@ -7,6 +7,9 @@ extends Control
 ## Speed of the craft in the orbit view in radians per real second. A real orbit
 ## takes 0.4 s at 1x and would blur. This pace stays readable.
 const ORBIT_VIEW_SPIN := 0.9
+## minimum chart height and the smaller one while the auto-pause panel is open
+const CHART_MIN := 100.0
+const CHART_MIN_DECIDING := 64.0
 
 var _mission: Mission
 var _clock: MissionClock
@@ -31,7 +34,10 @@ var _on_track := true
 ## The auto-pause panel: the reason, what happens if nothing changes and the
 ## options with their effects. The mission log hides while it is open.
 var _decision: PanelContainer
+var _decision_facts: Label
 var _decision_outlook: Label
+## reasons of the open auto-pause, kept to refresh the panel when a control changes
+var _fired: Array[StringName] = []
 var _options: HFlowContainer
 var _log_parts: Array[Control] = []
 ## speed the clock goes back to after a decision
@@ -87,6 +93,8 @@ func _build_main() -> Control:
 	var box := UiStyle.vbox(8)
 	_banner = UiStyle.label("", 17, UiStyle.WARN, true)
 	box.add_child(_banner)
+	_decision_facts = UiStyle.label("", 15, UiStyle.TEXT, true)
+	box.add_child(_decision_facts)
 	_decision_outlook = UiStyle.label("", 15, UiStyle.TEXT, true)
 	box.add_child(_decision_outlook)
 	_options = HFlowContainer.new()
@@ -111,7 +119,8 @@ func _build_main() -> Control:
 		sent.threshold_color = UiStyle.ACCENT
 	for c in _charts:
 		left.add_child(c)
-	left.add_child(UiStyle.label("Red bands: Safe mode, the camera was off and the radio only listened.", 14, UiStyle.MUTED))
+	var bands_note := UiStyle.label("Red bands: Safe mode, the camera was off and the radio only listened.", 14, UiStyle.MUTED)
+	left.add_child(bands_note)
 	var log_title := UiStyle.section("Mission log", "flag", 18)
 	left.add_child(log_title)
 	var scroll := ScrollContainer.new()
@@ -121,7 +130,7 @@ func _build_main() -> Control:
 	_log.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(_log)
 	left.add_child(scroll)
-	_log_parts = [log_title, scroll]
+	_log_parts = [bands_note, log_title, scroll]
 	return left
 
 
@@ -265,6 +274,8 @@ func _set_control(control: StringName, value: Variant) -> void:
 		var after := _outlook(_mission.controls)
 		_log_line("%s. %s" % [Explain.command(commands.back()), Explain.change(before, after, _goal_bits)], UiStyle.CYAN)
 		_update_forecast()
+		if _decision.visible:
+			_fill_decision()
 
 
 ## _outlook returns {forecast, projected} for a set of controls, the numbers the
@@ -324,34 +335,43 @@ func _auto_paused(fired: Array[StringName]) -> void:
 		var alerts := _mission.state.failures_started.map(func(k): return Explain.failure_alert(k))
 		text = (" ".join(alerts) + " " + text).strip_edges()
 	_banner.text = "Paused, %s. %s" % [Explain.mission_time(_mission.state.t_s), text]
-	var now := _outlook(_mission.controls)
-	var lines := [Explain.goal_outlook(now["projected"], _goal_bits)] + Explain.forecast(now["forecast"], _mission.state, true)
-	_decision_outlook.text = "If nothing changes: " + ". ".join(lines) + "."
-	for child in _options.get_children():
-		child.queue_free()
-	# The options only lay out the choice. Each shows what it does; none is applied
-	# until the player presses it and keeping everything as it is is always one.
-	for c in Warnings.choices(fired, _mission.input, _mission.timeline, _mission.controls, _mission.state):
-		_options.add_child(UiStyle.button("%s\n%s" % [Explain.choice(c), _choice_effect(c, now)], _choose.bind(c)))
-	_options.add_child(UiStyle.button("Keep going\nchange nothing", _resume))
+	_fired = fired
+	_fill_decision()
 	_show_decision(true)
 	for f in fired:
 		_log_line("%s: paused, %s." % [Explain.mission_time(_mission.state.t_s), Explain.PAUSE_NAMES[f].to_lower()], UiStyle.WARN)
 	_update_forecast()
 
 
+## _fill_decision writes the panel for the open auto-pause with the controls as
+## they are now: the numbers behind the problem, where the mission ends up if
+## nothing else breaks, the repairs and switches that apply, and Resume. It runs
+## again whenever the player changes a control while paused, so trying a camera
+## time shows its outcome before the clock runs.
+func _fill_decision() -> void:
+	var now := _outlook(_mission.controls)
+	var facts := Explain.tradeoffs(_fired, now["forecast"], Warnings.camera_step(_mission.input, _mission.timeline))
+	_decision_facts.text = " ".join(facts)
+	_decision_facts.visible = not facts.is_empty()
+	var lines := [Explain.goal_outlook(now["projected"], _goal_bits)] + Explain.forecast(now["forecast"], _mission.state, true)
+	_decision_outlook.text = "With the settings as they are now, if nothing else breaks: " + ". ".join(lines) + "."
+	for child in _options.get_children():
+		_options.remove_child(child)
+		child.queue_free()
+	for c in Warnings.choices(_fired, _mission.input, _mission.timeline, _mission.controls, _mission.state):
+		_options.add_child(UiStyle.button("%s\n%s" % [Explain.choice(c), _choice_effect(c, now)], _choose.bind(c)))
+	_options.add_child(UiStyle.button("Resume\nwith the settings as they are", _resume))
+
+
 func _choice_effect(c: Dictionary, now: Dictionary) -> String:
 	if c["kind"] == &"restart":
 		return "off for a minute, then back on"
-	var control := Controls.DUTY_CYCLE if c["kind"] == &"duty" else Controls.RADIO_ENABLED
-	return Explain.choice_effect(now, _outlook(_controls_with(control, c["value"])), _goal_bits)
+	return Explain.choice_effect(now, _outlook(_controls_with(Controls.RADIO_ENABLED, c["value"])), _goal_bits)
 
 
 ## _choose applies an auto-pause option and lets the clock run again.
 func _choose(c: Dictionary) -> void:
 	match c["kind"]:
-		&"duty":
-			_set_control(Controls.DUTY_CYCLE, c["value"])
 		&"radio":
 			_set_control(Controls.RADIO_ENABLED, c["value"])
 		&"restart":
@@ -364,10 +384,15 @@ func _resume() -> void:
 	_set_speed(_last_speed)
 
 
+## _show_decision opens or closes the auto-pause panel. While it is open the log
+## hides and the charts may shrink, the clock is stopped and the panel is what the
+## player reads; the charts still fill any room that is left.
 func _show_decision(on: bool) -> void:
 	_decision.visible = on
 	for part in _log_parts:
 		part.visible = not on
+	for c in _charts:
+		c.custom_minimum_size.y = CHART_MIN_DECIDING if on else CHART_MIN
 
 
 ## _refresh redraws the charts, labels and log once per frame, however many steps
@@ -445,7 +470,7 @@ func _update_forecast() -> void:
 	var now := _outlook(_mission.controls)
 	_on_track = float(now["projected"]) >= _goal_bits
 	var lines := [Explain.goal_outlook(now["projected"], _goal_bits)] + Explain.forecast(now["forecast"], s)
-	_forecast.text = "Estimate with these settings (averages over orbits and passes):\n" + "\n".join(lines)
+	_forecast.text = "If the settings stay and nothing else breaks (averages over orbits and passes):\n" + "\n".join(lines)
 	if not _duty_dragging:
 		_show_effects(_mission.controls.duty_cycle)
 
@@ -516,9 +541,9 @@ func _log_line(text: String, color: Color) -> void:
 
 func _chart(title: String, color: Color, max_value: float, format: Callable) -> LineChart:
 	var c := LineChart.new()
-	# Three charts at the default 130 px leave no room for the pause banner at 720 px.
+	# Three charts at the default 130 px leave no room for the pause panel at 720 px.
 	# They still grow to fill a larger window.
-	c.custom_minimum_size.y = 100
+	c.custom_minimum_size.y = CHART_MIN
 	c.title = title
 	c.color = color
 	c.max_value = maxf(max_value, 1.0)

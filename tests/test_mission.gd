@@ -289,21 +289,6 @@ func test_forecast_follows_the_controls_and_the_state() -> void:
 	assert_eq(Warnings.forecast(input, m.controls, t, m.state)["storage_full_in_s"], 0.0, "already full")
 
 
-func test_break_even_duty_balances_an_orbit() -> void:
-	var input := _make_input()
-	input.instrument_power_w = 40.0
-	var t := _timeline(input)
-	var m := Mission.new(input, t)
-	var be := Warnings.break_even_duty(input, t, m.controls, m.state)
-	assert_between(be, 0.01, 0.99)
-	var c := Controls.new()
-	c.radio_enabled = true
-	c.duty_cycle = be
-	assert_almost_eq(Warnings.orbit_energy_j(input, t, c), 0.0, 1.0, "no gain, no loss at break-even")
-	m.set_control(Controls.RADIO_ENABLED, false)
-	assert_gt(Warnings.break_even_duty(input, t, m.controls, m.state), be, "a silent radio leaves more for the camera")
-
-
 ## The goal projection is what the operations screen shows as "on track" or
 ## "short". It has to agree with the real run, with and without Safe mode cycles.
 func test_projection_matches_the_run_with_and_without_safe_mode() -> void:
@@ -336,21 +321,21 @@ func test_projection_halfway_counts_what_is_home_already() -> void:
 			"a silent radio sends nothing more")
 
 
-func test_low_battery_offers_a_camera_time_that_balances_power() -> void:
+func test_low_battery_offers_the_radio_and_the_exchange_rate_but_no_camera_setting() -> void:
 	var input := _make_input()
 	input.instrument_power_w = 40.0
 	var t := _timeline(input)
 	var m := Mission.new(input, t)
 	m.set_control(Controls.DUTY_CYCLE, 1.0)
 	var fired: Array[StringName] = [AutoPause.LOW_BATTERY]
-	var offered := Warnings.choices(fired, input, t, m.controls, m.state)
-	var duty := offered.filter(func(c): return c["kind"] == &"duty")
-	assert_eq(duty.size(), 1)
+	assert_eq(Warnings.choices(fired, input, t, m.controls, m.state), [{"kind": &"radio", "value": false}] as Array[Dictionary])
+	var step := Warnings.camera_step(input, t)
 	var c := Controls.new()
-	c.duty_cycle = duty[0]["value"]
-	assert_gte(Warnings.orbit_energy_j(input, t, c), 0.0, "the suggestion really balances an orbit")
-	c.duty_cycle += Warnings.DUTY_STEP
-	assert_lt(Warnings.orbit_energy_j(input, t, c), 0.0, "and it is the highest step that does")
+	c.duty_cycle = 0.5
+	var at_half := Warnings.orbit_energy_j(input, t, c)
+	c.duty_cycle = 0.6
+	assert_almost_eq(at_half - Warnings.orbit_energy_j(input, t, c), step["energy_per_orbit_j"], 1e-6, "10 % of camera time costs what it says")
+	assert_almost_eq(Warnings.generated_bits_per_day(input, c) - 0.5 * input.instrument_rate_bps * 86400.0, step["bits_per_day"], 1e-3)
 
 
 func test_choices_follow_the_reason() -> void:
@@ -369,15 +354,24 @@ func test_choices_follow_the_reason() -> void:
 	assert_eq(Warnings.choices(broke, input, t, m.controls, m.state), [{"kind": &"restart", "value": Controls.RADIO_ENABLED}] as Array[Dictionary])
 
 
-func test_full_memory_offers_a_camera_time_the_radio_keeps_up_with() -> void:
+func test_full_memory_offers_the_radio_only_when_it_is_off() -> void:
 	var input := _make_input()
 	input.downlink_rate_bps = 0.5e6
 	var t := _timeline(input)
 	var m := Mission.new(input, t)
 	m.set_control(Controls.DUTY_CYCLE, 1.0)
 	var full: Array[StringName] = [AutoPause.STORAGE_HIGH]
-	var duty := Warnings.choices(full, input, t, m.controls, m.state).filter(func(c): return c["kind"] == &"duty")
-	assert_eq(duty.size(), 1)
-	var c := Controls.new()
-	c.duty_cycle = duty[0]["value"]
-	assert_lte(Warnings.generated_bits_per_day(input, c), Warnings.deliverable_bits_per_day(input, t, c), "memory stops filling")
+	assert_eq(Warnings.choices(full, input, t, m.controls, m.state), [] as Array[Dictionary], "the camera time is left to the player")
+	m.set_control(Controls.RADIO_ENABLED, false)
+	assert_eq(Warnings.choices(full, input, t, m.controls, m.state), [{"kind": &"radio", "value": true}] as Array[Dictionary])
+
+
+func test_factor_numbers_are_the_run_and_design_figures() -> void:
+	var input := _make_input(4.0)
+	var t := _timeline(input)
+	var r := Simulator.run(input, _timeline(input))
+	var n := Outcome.factor_numbers(r, input, t)
+	assert_almost_eq(n["made_per_day"], r.generated_bits_total / 4.0, 1.0)
+	assert_almost_eq(n["sendable_per_day"], input.downlink_rate_bps * t.contact_s_per_day(), 1.0)
+	assert_eq(n["energy_per_orbit_j"], Warnings.orbit_energy_j(input, t))
+	assert_eq(n["storage_bits"], input.storage_capacity_bits)

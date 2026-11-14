@@ -30,6 +30,13 @@ static func check(design: MissionDesign, scenario: Scenario, catalog: Object) ->
 			out.append(_v(&"missing_part", category, null, ""))
 	if design.ground_station_ids.is_empty():
 		out.append(_v(&"missing_part", "ground_station", null, ""))
+	# min_structure_u: a part sized for a bigger frame does not fit a smaller one
+	if not structure.is_empty():
+		var volume_u := int(structure.get("volume_u", 0))
+		for id in design.component_ids:
+			var c: Dictionary = catalog.get_entry("components", id)
+			if c.has("min_structure_u") and volume_u < int(c["min_structure_u"]):
+				out.append(_v(&"structure_too_small", String(id), int(c["min_structure_u"]), "U"))
 	# max_payload_kg is what the frame carries on top of its own mass
 	if structure.has("max_payload_kg"):
 		var payload_kg := mass_kg - float(structure.get("mass_kg", 0.0))

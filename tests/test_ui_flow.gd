@@ -103,7 +103,7 @@ func test_operations_clock_runs_and_auto_pauses_on_a_pass_with_the_radio_off() -
 	assert_true(run._decision.visible, "the decision panel opens")
 	var titles: Array = run._options.get_children().map(func(b): return b.text.get_slice("\n", 0))
 	assert_has(titles, "Radio on", "the obvious fix is offered")
-	assert_has(titles, "Keep going", "and so is changing nothing")
+	assert_has(titles, "Resume", "and so is changing nothing")
 	assert_false(run._log_parts[1].visible, "the log makes room for it")
 	assert_gt(m.state.contact_starts, 0)
 	var at := m.state.step
@@ -158,6 +158,31 @@ func test_launch_without_warnings_needs_no_acceptance() -> void:
 	var launch: Control = await _go(&"launch")
 	assert_null(launch._accept)
 	assert_false(launch._go.disabled)
+
+
+func _report_lines() -> Array:
+	var report: Control = await _go(&"report")
+	return report.find_children("*", "Label", true, false).map(func(l): return l.text)
+
+
+func test_report_blames_a_downlink_limit_on_the_design() -> void:
+	_reference_design()
+	GameState.design.instrument_duty_cycle = 1.0
+	GameState.start_mission()
+	var run: Control = await _go(&"run")
+	run._finish_now()
+	var texts: Array = await _report_lines()
+	assert_true(texts.any(func(t): return t.begins_with("Downlink:") and "minutes over the ground stations" in t), "explained with the pass time")
+	assert_true(texts.any(func(t): return "comes from the design" in t))
+
+
+func test_report_blames_a_limit_on_the_changes_in_flight() -> void:
+	var run: Control = await _launch()
+	run._radio.button_pressed = false
+	run._finish_now()
+	var texts: Array = await _report_lines()
+	assert_true(texts.any(func(t): return t.begins_with("Memory:")), "a silent radio fills the memory")
+	assert_true(texts.any(func(t): return "came from the changes in flight" in t), "the design alone was fine")
 
 
 func test_picking_a_part_replaces_the_old_one() -> void:

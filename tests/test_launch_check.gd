@@ -62,6 +62,34 @@ func test_parts_heavier_than_the_frame_carries_block_launch() -> void:
 	assert_eq(LaunchCheck.check(_design(), _scenario(), c), [] as Array[Dictionary], "exactly full is fine")
 
 
+func test_a_part_sized_for_a_bigger_frame_blocks_launch() -> void:
+	var c := _catalog()
+	c.add("components", {"id": "frame", "category": "structure", "mass_kg": 1.0, "cost_kusd": 10.0, "power_w": 0.0, "safe_power_w": 0.0, "volume_u": 3})
+	c.add("components", {"id": "panel", "category": "solar", "mass_kg": 0.5, "cost_kusd": 20.0, "power_w": 0.0, "safe_power_w": 0.0, "generated_w_1au": 30.0, "sunlit_factor": 0.5, "min_structure_u": 6})
+	var v := LaunchCheck.check(_design(), _scenario(), c)
+	assert_eq(_kinds(v), [&"structure_too_small"])
+	assert_eq(v[0]["value"], "panel")
+	assert_eq(v[0]["limit"], 6)
+	c.add("components", {"id": "frame", "category": "structure", "mass_kg": 1.0, "cost_kusd": 10.0, "power_w": 0.0, "safe_power_w": 0.0, "volume_u": 6})
+	assert_eq(LaunchCheck.check(_design(), _scenario(), c), [] as Array[Dictionary], "fits a 6U frame")
+
+
+## The shipped catalog: the 6U array is only for the 6U structure.
+func test_the_6u_array_needs_the_6u_structure() -> void:
+	var d := MissionDesign.new()
+	d.component_ids = [&"structure_3u", &"solar_6u_deployable", &"battery_43wh", &"radio_s_band", &"obc_32gb", &"camera_thermal"]
+	d.ground_station_ids = [&"svalbard"]
+	d.launcher_id = &"rideshare_sso"
+	d.orbit_id = &"sso_550"
+	var s := Catalog.get_scenario(&"wildfire_watch")
+	assert_eq(_kinds(LaunchCheck.check(d, s, Catalog)), [&"structure_too_small"])
+	d.component_ids[0] = &"structure_6u"
+	assert_eq(LaunchCheck.check(d, s, Catalog), [] as Array[Dictionary])
+	d.component_ids[0] = &"structure_3u"
+	d.component_ids[1] = &"solar_3u_deployable"
+	assert_eq(LaunchCheck.check(d, s, Catalog), [] as Array[Dictionary], "a 3U array fits")
+
+
 func test_unreachable_orbit_and_budget() -> void:
 	var d := _design()
 	d.orbit_id = &"leo_400"
