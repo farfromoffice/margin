@@ -134,6 +134,7 @@ func _begin() -> void:
 	_go.disabled = true
 	_skip.disabled = false
 	_show_overlay(&"sequence")
+	Sfx.play(&"liftoff")
 	_scene.launch()
 
 

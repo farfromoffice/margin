@@ -234,6 +234,13 @@ func _power_cycle(control: StringName) -> void:
 
 func _auto_paused(fired: Array[StringName]) -> void:
 	_set_speed(0)
+	# one sound per pause, the most serious reason wins
+	if AutoPause.FAILURE in fired:
+		Sfx.play(&"failure")
+	elif AutoPause.SAFE_ENTER in fired:
+		Sfx.play(&"safe_mode")
+	else:
+		Sfx.play(&"pause")
 	var text := Explain.pause_reasons(fired)
 	if AutoPause.FAILURE in fired:
 		var alerts := _mission.state.failures_started.map(func(k): return Explain.failure_alert(k))

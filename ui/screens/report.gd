@@ -20,6 +20,8 @@ func _ready() -> void:
 		col.add_child(_title("Mission lost on day %d" % (int(r.end_t_s / 86400.0) + 1), UiStyle.BAD))
 	else:
 		col.add_child(_title("Mission complete", UiStyle.GOOD))
+	var met := Outcome.objectives(s, r).all(func(row): return row["met"])
+	Sfx.play(&"goal_met" if met and r.end_reason != RunResult.EndReason.POWER_LOST else &"goal_missed")
 
 	var grid := UiStyle.hbox(16)
 	col.add_child(grid)
