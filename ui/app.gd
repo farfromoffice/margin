@@ -4,6 +4,7 @@ extends Control
 
 const SCREENS := {
 	&"main_menu": "res://scenes/main_menu.tscn",
+	&"how_to_play": "res://ui/screens/how_to_play.gd",
 	&"briefing": "res://ui/screens/briefing.gd",
 	&"design": "res://ui/screens/design.gd",
 	&"prediction": "res://ui/screens/prediction.gd",

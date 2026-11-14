@@ -1,6 +1,7 @@
 extends Control
 ## Title screen: name and buttons on the left, Earth with a circling spacecraft
-## on the right. Play starts Wildfire Watch, Sandbox has no limits or goals.
+## on the right. Play starts Wildfire Watch, Sandbox has no limits or goals,
+## How to play explains the loop.
 
 const FIRST_SCENARIO := &"wildfire_watch"
 
@@ -48,6 +49,12 @@ func _ready() -> void:
 	var sandbox: Button = $Center/Menu/SandboxButton
 	_style_button(sandbox, "Sandbox: no limits, no goals", "planet", 15)
 	sandbox.pressed.connect(_start.bind(&"sandbox"))
+	var how := Button.new()
+	how.name = "HowToPlayButton"
+	menu.add_child(how)
+	menu.move_child(how, sandbox.get_index() + 1)
+	_style_button(how, "How to play", "flag", 15)
+	how.pressed.connect(func(): EventBus.screen_requested.emit(&"how_to_play"))
 
 	var hint := UiStyle.label("Drag the Earth to spin it", 13, UiStyle.MUTED)
 	hint.anchor_left = 0.42

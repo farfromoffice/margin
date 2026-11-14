@@ -214,3 +214,12 @@ func test_report_lists_the_failures() -> void:
 	var texts := report.find_children("*", "Label", true, false).map(func(l): return l.text)
 	assert_true(texts.any(func(t): return "Solar string failed" in t))
 
+
+func test_menu_opens_how_to_play_and_comes_back() -> void:
+	app.current.get_node("Center/Menu/HowToPlayButton").pressed.emit()
+	await wait_process_frames(2)
+	assert_eq(app.current.name, "how_to_play")
+	EventBus.screen_requested.emit(&"main_menu")
+	await wait_process_frames(2)
+	assert_eq(app.current.name, "main_menu")
+

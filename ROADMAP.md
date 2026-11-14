@@ -44,6 +44,7 @@ Only after Phase 2 works end to end.
 - [x] 3D spacecraft preview on the design screen, built from the chosen parts
 - [x] Launch pad between prediction and run: preflight GO/NO GO, final inspection, launch milestones (shown, not simulated)
 - [x] Live failures in flight (battery fade, solar string, radio and camera hangs) with power cycle recovery
+- [x] How to play screen
 
 ## Phase 4 · Freeze (36 to 42 h)
 
