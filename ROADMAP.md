@@ -43,6 +43,7 @@ Only after Phase 2 works end to end.
 - [ ] Optional: further scenarios, sandbox
 - [x] 3D spacecraft preview on the design screen, built from the chosen parts
 - [x] Launch pad between prediction and run: preflight GO/NO GO, final inspection, launch milestones (shown, not simulated)
+- [x] 3D launch: launch site, liftoff, ascent, fairing and spacecraft separation in orbit
 - [x] Live failures in flight (battery fade, solar string, radio and camera hangs) with power cycle recovery
 - [x] How to play screen
 

@@ -60,6 +60,7 @@ func test_full_flow_reaches_the_report() -> void:
 	launch._begin()
 	launch.skip_sequence()
 	assert_false(launch._ops.disabled)
+	assert_eq(launch._seq.get_child_count(), LaunchScene.MILESTONES.size(), "every milestone logged once")
 	launch._start_ops()
 	await wait_process_frames(2)
 	var run: Control = app.current

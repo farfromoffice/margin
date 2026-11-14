@@ -52,7 +52,7 @@ Component reliability is not modeled in the first version.
 
 ## launchers.json
 
-id, name, cost_kusd, capacity_kg (object: orbit id to kg; an orbit missing here is unreachable by this launcher), source, provenance.
+id, name, cost_kusd, capacity_kg (object: orbit id to kg; an orbit missing here is unreachable by this launcher), rocket_length_m and rocket_diameter_m (only for the 3D launch, optional), source, provenance.
 
 ## orbits.json
 

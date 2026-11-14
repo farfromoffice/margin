@@ -11,7 +11,7 @@ Download for Linux and Windows: _builds coming soon_
 1. Read the mission briefing and its objective.
 2. Choose an instrument, solar array, battery, radio, ground stations, orbit and launcher. The game blocks launch if the mass, orbit or budget does not fit.
 3. Predict which constraints will limit the mission.
-4. Check the preflight numbers on the launch pad and watch the launch milestones. The ascent is shown, not simulated.
+4. Check the preflight numbers on the launch pad and watch the launch in 3D, from the pad to your spacecraft unfolding in orbit. The ascent is shown, not simulated.
 5. Fly the mission: change the camera on-time and the radio while it runs, and deal with failures as they happen (a power cycle clears a frozen radio or camera). Hardware, orbit and launcher are locked after launch.
 6. Read the report, change the design, try again.
 
@@ -30,7 +30,7 @@ Orbit eclipse and contact data in `data/orbits.json` come from GMAT R2025a. Afte
 python3 tools/gmat/build_orbits.py /path/to/GMAT/R2025a/bin
 ```
 
-Code layout: `sim/` is pure simulation logic (see DESIGN.md), `ui/` holds the screens (`ui/screens/`), widgets, icons and fonts, `scenes/app.tscn` is the entry point and swaps screens on `EventBus.screen_requested`.
+Code layout: `sim/` is pure simulation logic (see DESIGN.md), `ui/` holds the screens (`ui/screens/`), the 3D launch site (`ui/launch/`), widgets, icons and fonts, `scenes/app.tscn` is the entry point and swaps screens on `EventBus.screen_requested`.
 
 Project docs:
 

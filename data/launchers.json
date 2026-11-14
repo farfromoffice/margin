@@ -3,10 +3,12 @@
     "id": "csli_iss",
     "name": "NASA CubeSat Launch Initiative (from the space station)",
     "cost_kusd": 0.0,
+    "rocket_length_m": 70.0,
+    "rocket_diameter_m": 3.7,
     "capacity_kg": {
       "leo_400": 12.0
     },
-    "source": "NASA CSLI, no cost launch for selected educational CubeSats https://www.nasa.gov/kennedy/launch-services-program/cubesat-launch-initiative/ ; 12 kg is the 6U CubeSat mass limit",
+    "source": "NASA CSLI, no cost launch for selected educational CubeSats https://www.nasa.gov/kennedy/launch-services-program/cubesat-launch-initiative/ ; 12 kg is the 6U CubeSat mass limit; rocket size: a medium cargo resupply launcher, taken as 70 m by 3.7 m",
     "provenance": "approximation",
     "provenance_fields": {
       "cost_kusd": "documented"
@@ -16,26 +18,32 @@
     "id": "rideshare_sso",
     "name": "Rideshare to sun-synchronous orbit",
     "cost_kusd": 350.0,
+    "rocket_length_m": 70.0,
+    "rocket_diameter_m": 3.7,
     "capacity_kg": {
       "sso_550": 50.0
     },
-    "source": "SpaceX Transporter rideshare, 350 kUSD for up to 50 kg to SSO (2026 rate) https://newspaceeconomy.ca/2026/02/27/satellite-ridesharing-market-analysis-2026/",
+    "source": "SpaceX Transporter rideshare, 350 kUSD for up to 50 kg to SSO (2026 rate) https://newspaceeconomy.ca/2026/02/27/satellite-ridesharing-market-analysis-2026/ ; rocket size: Falcon 9, 70 m by 3.7 m https://www.spacex.com/vehicles/falcon-9/",
     "provenance": "documented"
   },
   {
     "id": "dedicated_small",
     "name": "Dedicated small launcher",
     "cost_kusd": 7500.0,
+    "rocket_length_m": 18.0,
+    "rocket_diameter_m": 1.2,
     "capacity_kg": {
       "leo_400": 300.0,
       "sso_550": 200.0,
       "sso_700": 150.0
     },
-    "source": "Rocket Lab Electron, 200 kg to 500 km SSO, up to 300 kg to lower orbits, about 7.5 MUSD https://orbitalradar.com/launch-vehicles/electron",
+    "source": "Rocket Lab Electron, 200 kg to 500 km SSO, up to 300 kg to lower orbits, about 7.5 MUSD https://orbitalradar.com/launch-vehicles/electron ; rocket size: Electron, 18 m by 1.2 m https://www.rocketlabusa.com/launch/electron/",
     "provenance": "approximation",
     "provenance_fields": {
       "capacity_kg": "approximation",
-      "cost_kusd": "documented"
+      "cost_kusd": "documented",
+      "rocket_length_m": "documented",
+      "rocket_diameter_m": "documented"
     }
   }
 ]

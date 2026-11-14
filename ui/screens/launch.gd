@@ -1,19 +1,17 @@
 extends Control
 ## Launch pad between the prediction and the run. Shows the preflight numbers
-## the design will fly with, then plays the launch as a fixed list of
-## milestones. Nothing here is flown or steered: the launcher reaches the orbit
-## if the launch check passed, so the sequence is a story, not a simulation.
-
-const STEP_S := 1.1
+## the design will fly with, then plays the launch in 3D and logs each
+## milestone as the scene reaches it. Nothing here is flown or steered: the
+## launcher reaches the orbit if the launch check passed, so the sequence is a
+## story, not a simulation.
 
 var _go: Button
 var _ops: Button
+var _skip: Button
 var _seq: VBoxContainer
-var _preview: SpacecraftView
-var _steps: Array[String] = []
-var _shown := 0
-var _clock := 0.0
-var _running := false
+var _scene: LaunchScene
+## milestone id -> line for the sequence log
+var _steps := {}
 
 
 func _ready() -> void:
@@ -38,9 +36,9 @@ func _ready() -> void:
 
 	var middle := UiStyle.vbox(10)
 	middle.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	middle.add_child(UiStyle.section("Final inspection", "satellite", 18, UiStyle.CYAN))
-	_preview = SpacecraftView.new()
-	var frame := UiStyle.panel(_preview)
+	middle.add_child(UiStyle.section("Launch site", "rocket", 18, UiStyle.CYAN))
+	_scene = LaunchScene.new()
+	var frame := UiStyle.panel(_scene)
 	frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	middle.add_child(frame)
 	row.add_child(middle)
@@ -49,7 +47,11 @@ func _ready() -> void:
 		var c := Catalog.get_entry("components", id)
 		if not c.is_empty():
 			parts.append(c)
-	_preview.show_parts(parts)
+	_scene.set_up(launcher, parts)
+	_scene.milestone.connect(_on_milestone)
+	_scene.finished.connect(func():
+		_skip.disabled = true
+		_ops.disabled = false)
 
 	var right := UiStyle.vbox(10)
 	right.custom_minimum_size.x = 340
@@ -68,7 +70,10 @@ func _ready() -> void:
 	_ops = UiStyle.button("Start mission operations", _start_ops)
 	_ops.icon = UiStyle.icon("satellite")
 	_ops.disabled = true
+	_skip = UiStyle.button("Skip to orbit", skip_sequence)
+	_skip.disabled = true
 	right.add_child(_go)
+	right.add_child(_skip)
 	right.add_child(_ops)
 	right.add_child(UiStyle.button("Back to prediction", func(): EventBus.screen_requested.emit(&"prediction")))
 	var rp := UiStyle.panel(right)
@@ -78,28 +83,21 @@ func _ready() -> void:
 	_steps = _sequence(launcher, orbit)
 
 
-func _process(delta: float) -> void:
-	if not _running:
-		return
-	_clock += delta
-	while _shown < _steps.size() and _clock >= _shown * STEP_S:
-		_seq.add_child(UiStyle.label(_steps[_shown], 15, UiStyle.TEXT, true))
-		_shown += 1
-	if _shown >= _steps.size():
-		_running = false
-		_ops.disabled = false
-
-
 func _begin() -> void:
 	_go.disabled = true
-	_running = true
+	_skip.disabled = false
+	_scene.launch()
 
 
-## Shows every remaining milestone at once, for the impatient and for tests.
+## Jumps the scene to orbit; it logs every milestone left on the way.
 func skip_sequence() -> void:
-	_running = true
-	_clock = INF
-	_process(0.0)
+	_go.disabled = true
+	_scene.skip()
+
+
+func _on_milestone(id: StringName) -> void:
+	if _steps.has(id):
+		_seq.add_child(UiStyle.label(_steps[id], 15, UiStyle.TEXT, true))
 
 
 func _start_ops() -> void:
@@ -150,14 +148,15 @@ func _item(what: String, value: String, ok: bool, color := Color.TRANSPARENT) ->
 
 ## hmm, no timestamps on purpose: the sim starts in orbit and has no ascent
 ## model, so any T+ seconds here would be made up.
-func _sequence(launcher: Dictionary, orbit: Dictionary) -> Array[String]:
+func _sequence(launcher: Dictionary, orbit: Dictionary) -> Dictionary:
 	var km := float(orbit.get("altitude_km", 0.0))
-	return [
-		"Final checks complete. All stations GO.",
-		"Liftoff: %s." % launcher.get("name", "launcher"),
-		"Ascent. The air thins steadily with height, there is no line where it stops.",
-		"The rocket tips over and builds sideways speed. Going straight up never makes an orbit.",
-		"Spacecraft separated at %d km." % roundi(km),
-		"In orbit. Gravity here is still about %d %% of the surface value; you float because you keep falling around Earth." % roundi(100.0 * pow(OrbitTimeline.R_EARTH_M / (OrbitTimeline.R_EARTH_M + km * 1000.0), 2.0)),
-		"Battery full, memory empty. Handing over to mission operations.",
-	]
+	return {
+		&"countdown": "Final checks complete. All stations GO. Ignition.",
+		&"liftoff": "Liftoff: %s." % launcher.get("name", "launcher"),
+		&"ascent": "Ascent. The air thins steadily with height, there is no line where it stops.",
+		&"pitch": "The rocket tips over and builds sideways speed. Going straight up never makes an orbit.",
+		&"fairing": "Fairing open. Above most of the air, the nose cone is dead weight now.",
+		&"separation": "Spacecraft separated at %d km." % roundi(km),
+		&"deploy": "Solar panels out. In orbit, gravity is still about %d %% of the surface value; you float because you keep falling around Earth." % roundi(100.0 * pow(OrbitTimeline.R_EARTH_M / (OrbitTimeline.R_EARTH_M + km * 1000.0), 2.0)),
+		&"handover": "Battery full, memory empty. Handing over to mission operations.",
+	}
