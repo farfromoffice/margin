@@ -49,6 +49,16 @@ func test_full_flow_reaches_the_report() -> void:
 	prediction._boxes[&"power"].button_pressed = true
 	prediction._launch()
 	await wait_process_frames(2)
+	var launch: Control = app.current
+	assert_eq(launch.name, "launch")
+	assert_null(GameState.mission, "nothing flies before operations start")
+	assert_false(launch._go.disabled)
+	assert_true(launch._ops.disabled)
+	launch._begin()
+	launch.skip_sequence()
+	assert_false(launch._ops.disabled)
+	launch._start_ops()
+	await wait_process_frames(2)
 	var run: Control = app.current
 	assert_eq(run.name, "run")
 	assert_not_null(GameState.mission)

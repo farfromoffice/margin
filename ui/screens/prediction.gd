@@ -39,7 +39,7 @@ func _ready() -> void:
 
 	var buttons := UiStyle.hbox(12)
 	buttons.add_child(UiStyle.button("Back to design", func(): EventBus.screen_requested.emit(&"design")))
-	var go := UiStyle.button("Launch!", _launch)
+	var go := UiStyle.button("To the launch pad", _launch)
 	go.icon = UiStyle.icon("rocket")
 	go.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	buttons.add_child(go)
@@ -51,5 +51,4 @@ func _launch() -> void:
 	for f in _boxes:
 		if _boxes[f].button_pressed:
 			GameState.prediction.append(f)
-	GameState.start_mission()
-	EventBus.screen_requested.emit(&"run")
+	EventBus.screen_requested.emit(&"launch")

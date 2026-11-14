@@ -42,6 +42,7 @@ Only after Phase 2 works end to end.
 - [ ] Optional: local role-based play at one screen
 - [ ] Optional: further scenarios, sandbox
 - [x] 3D spacecraft preview on the design screen, built from the chosen parts
+- [x] Launch pad between prediction and run: preflight GO/NO GO, final inspection, launch milestones (shown, not simulated)
 
 ## Phase 4 · Freeze (36 to 42 h)
 

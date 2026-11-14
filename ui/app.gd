@@ -7,6 +7,7 @@ const SCREENS := {
 	&"briefing": "res://ui/screens/briefing.gd",
 	&"design": "res://ui/screens/design.gd",
 	&"prediction": "res://ui/screens/prediction.gd",
+	&"launch": "res://ui/screens/launch.gd",
 	&"run": "res://ui/screens/run_view.gd",
 	&"report": "res://ui/screens/report.gd",
 }
