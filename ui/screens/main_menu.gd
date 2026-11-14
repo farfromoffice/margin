@@ -65,7 +65,9 @@ func _ready() -> void:
 	hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(hint)
 
-	var footer := UiStyle.label("Not a NASA product. Team farfromoffice.", 13, UiStyle.MUTED)
+	var footer := UiStyle.label("An independent project by farfromoffice Studios. Not affiliated with NASA.",
+    13,
+    UiStyle.MUTED)
 	footer.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
 	footer.position += Vector2(28, -36)
 	add_child(footer)
