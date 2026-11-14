@@ -4,7 +4,7 @@
 
 Margin is a space mission design game made for the NASA Space Apps Challenge 2026 ([Space Mission Design Game](https://www.spaceappschallenge.org/2026/challenges/space-mission-design-game/)). You design a small Earth-observation mission, predict what will limit it, run it and find out why.
 
-Play in the browser: _link coming soon_
+Download for Linux and Windows: _builds coming soon_
 
 ## Playing
 

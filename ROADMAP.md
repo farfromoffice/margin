@@ -9,7 +9,7 @@ Hackathon: 14 to 15 November 2026, 48 hours. Hours count from kickoff.
 - [x] Folder layout, autoloads (`Catalog`, `GameState`, `EventBus`)
 - [x] First data contracts: `MissionDesign`, `Scenario`, `DayState`
 - [x] GUT test runner
-- [ ] Empty web export uploaded to itch.io, opened in Chrome and Firefox
+- [ ] Empty Linux and Windows builds exported and launched on each
 
 ## Phase 1 · Core simulation (3 to 14 h)
 
@@ -45,7 +45,7 @@ Only after Phase 2 works end to end.
 ## Phase 4 · Freeze (36 to 42 h)
 
 - [ ] Code freeze, bug fixes
-- [ ] Final web export
+- [ ] Final Linux and Windows builds
 - [ ] Docs up to date
 
 ## Phase 5 · Submit (42 to 48 h)
