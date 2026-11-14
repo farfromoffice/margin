@@ -29,13 +29,15 @@ window/size/viewport_width=1280
 window/size/viewport_height=720
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
+mouse_cursor/custom_image="res://ui/cursor/pointer.png"
+mouse_cursor/custom_image_hotspot=Vector2(4, 4)
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/gut/plugin.cfg")
 
 [rendering]
 
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 environment/defaults/default_clear_color=Color(0, 0, 0, 1)
-
-[editor_plugins]
-
-enabled=PackedStringArray("res://addons/gut/plugin.cfg")

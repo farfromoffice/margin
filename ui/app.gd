@@ -19,9 +19,20 @@ var current: Control
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	theme = UiStyle.build_theme()
+	_share_cursor()
 	add_child(Starfield.new())
 	EventBus.screen_requested.connect(show_screen)
 	show_screen(&"main_menu")
+
+
+## The project setting only swaps the plain arrow. Dragging the Earth asks for
+## the drag shape, so point that at the same image or the system hand pops up.
+func _share_cursor() -> void:
+	var path: String = ProjectSettings.get_setting("display/mouse_cursor/custom_image", "")
+	if path.is_empty() or not ResourceLoader.exists(path):
+		return
+	var hotspot: Vector2 = ProjectSettings.get_setting("display/mouse_cursor/custom_image_hotspot", Vector2.ZERO)
+	Input.set_custom_mouse_cursor(load(path), Input.CURSOR_DRAG, hotspot)
 
 
 func show_screen(screen: StringName) -> void:

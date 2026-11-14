@@ -15,6 +15,8 @@ var _leaving := false
 
 
 func _ready() -> void:
+	# hidden still delivers clicks, so skipping with the mouse keeps working
+	Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var bg := ColorRect.new()
 	bg.color = Color.BLACK
@@ -96,4 +98,9 @@ func _leave(duration: float) -> void:
 		_tween.kill()
 	var out := create_tween()
 	out.tween_property(_logo, "modulate:a", 0.0, duration)
-	out.tween_callback(func() -> void: get_tree().change_scene_to_file(NEXT_SCENE))
+	out.tween_callback(_go_next)
+
+
+func _go_next() -> void:
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	get_tree().change_scene_to_file(NEXT_SCENE)
