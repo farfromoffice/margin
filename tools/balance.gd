@@ -40,7 +40,8 @@ func _sweep(catalog: Node) -> void:
 		for solar in _ids(catalog, "solar"):
 			for battery in _ids(catalog, "battery"):
 				for radio in _ids(catalog, "comms"):
-					for adcs in _ids(catalog, "adcs"):
+					# adcs is optional on the design screen, so &"" stands for flying without one
+					for adcs in [&""] + _ids(catalog, "adcs"):
 						for camera in _ids(catalog, "instrument"):
 							for launcher in catalog.all("launchers"):
 								for orbit_id in launcher["capacity_kg"]:
@@ -48,7 +49,9 @@ func _sweep(catalog: Node) -> void:
 										for duty in DUTIES:
 											var d := MissionDesign.new()
 											d.scenario_id = SCENARIO
-											d.component_ids = [structure, solar, battery, radio, &"obc_32gb", adcs, camera]
+											d.component_ids = [structure, solar, battery, radio, &"obc_32gb", camera]
+											if adcs != &"":
+												d.component_ids.append(adcs)
 											d.ground_station_ids = st
 											d.launcher_id = StringName(launcher["id"])
 											d.orbit_id = StringName(orbit_id)
@@ -69,7 +72,8 @@ func _fly(d: MissionDesign, scenario: Scenario, catalog: Node) -> void:
 	var sums := LaunchCheck.totals(d, catalog)
 	var met := Outcome.objectives(scenario, r).all(func(row): return row["met"])
 	var c := d.component_ids
-	print(",".join([c[0], c[1], c[2], c[3], c[5], c[6], "+".join(d.ground_station_ids), d.launcher_id, d.orbit_id,
+	var adcs: StringName = c[6] if c.size() > 6 else &""
+	print(",".join([c[0], c[1], c[2], c[3], adcs, c[5], "+".join(d.ground_station_ids), d.launcher_id, d.orbit_id,
 		d.instrument_duty_cycle, sums["cost_kusd"], snappedf(sums["mass_kg"], 0.01),
 		"done" if r.end_reason == RunResult.EndReason.COMPLETED else "lost",
 		roundi(r.delivered_bits_total / 8e6), roundi(r.discarded_bits_total / 8e6), roundi(r.missed_bits_total / 8e6),
