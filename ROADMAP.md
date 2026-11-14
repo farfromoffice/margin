@@ -39,8 +39,8 @@ Only after Phase 2 works end to end.
 
 - [x] Balance pass, validation table in RESEARCH.md
 - [x] Design comparison (two runs side by side)
-- [ ] Optional: local role-based play at one screen
-- [ ] Optional: further scenarios, sandbox
+- [ ] Optional, after the hackathon: local role-based play at one screen
+- [ ] Optional, after the hackathon: further scenarios, sandbox
 - [x] 3D spacecraft preview on the design screen, built from the chosen parts
 - [x] Launch pad between prediction and run: preflight GO/NO GO, final inspection, launch milestones (shown, not simulated)
 - [x] 3D launch: launch site, liftoff, ascent, fairing and spacecraft separation in orbit

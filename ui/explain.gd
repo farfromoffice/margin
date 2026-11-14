@@ -148,7 +148,7 @@ static func part_line(c: Dictionary) -> String:
 	var bits: Array[String] = [kg(c.get("mass_kg", 0.0))]
 	match str(c.get("category", "")):
 		"solar":
-			bits.append("%.1f W peak" % float(c.get("generated_w_1au", 0.0)))
+			bits.append("%.1f W in full sun" % float(c.get("generated_w_1au", 0.0)))
 		"battery":
 			bits.append("%.0f Wh" % float(c.get("capacity_wh", 0.0)))
 		"comms":

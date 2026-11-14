@@ -198,6 +198,7 @@ func _margin_panel() -> Control:
 	_cost = MarginMeter.new("Cost", "coin")
 	col.add_child(_mass)
 	col.add_child(_cost)
+	col.add_child(UiStyle.label("kUSD = thousand US dollars. Costs are made up teaching values.", 13, UiStyle.MUTED, true))
 	_power = UiStyle.label("", 16, UiStyle.TEXT, true)
 	_data = UiStyle.label("", 16, UiStyle.TEXT, true)
 	col.add_child(_icon_row("bolt", _power))

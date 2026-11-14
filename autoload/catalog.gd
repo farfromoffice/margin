@@ -12,7 +12,6 @@ const REQUIRED := {
 	"orbits": ["id", "name", "body", "source", "provenance"],
 	"scenarios": ["id", "title", "duration_days"],
 	"ground_stations": ["id", "name", "network", "source", "provenance"],
-	"real_missions": ["id", "name", "orbit_id"],
 	"failures": ["id", "name", "explain", "fix", "weight", "source", "provenance"],
 }
 

@@ -13,11 +13,14 @@ const PHASES := [
 
 const IDEAS := [
 	["bolt", "Power", "Solar panels charge the battery only in sunlight. In Earth's shadow everything runs on the battery. When the charge drops below the battery's Safe line the spacecraft enters Safe mode: camera off, radio only listening, until it recharges."],
+	["camera", "Pointing", "A pointing system turns the spacecraft so the camera faces the ground. Without one it faces the ground only about a quarter of the time, so only that share of the pictures count."],
 	["chip", "Data", "The camera fills the memory, the radio empties it, but only while a ground station is in view. A full memory throws new pictures away."],
 	["orbit", "Time", "Pause, 1×, 4× or 16×. The game pauses on its own when a decision is due: battery low, memory filling, a pass with the radio off, or a failure."],
 	["gyro", "Failures", "Parts break in flight. A frozen radio or camera comes back with a restart (the Restart buttons under Spacecraft health light up when one is needed). A weaker battery or solar array stays weak: use less power for the rest of the mission."],
 	["weight", "Margin", "Every gram, watt and megabyte you keep spare is margin. Margin is what lets the mission survive the eclipse, the slow pass and the failure you did not plan for."],
 	["star", "Where numbers come from", "Every part carries a source and a label: documented, approximation or fictional. Orbits and passes come from NASA GMAT runs. Failure timing is a teaching value."],
+	["planet", "What the model leaves out", "Power and data are simple averages each minute. The pictures are counted as megabytes: the game makes no real images and finds no real fires. No air drag, heat or radio link budget. Costs and failure rates are made up."],
+	["coin", "Words on the screens", "kUSD: thousand US dollars. W in full sun: what a panel makes facing the Sun, the average over an orbit is lower. Wh: energy, one watt for one hour. MB: megabytes of pictures. Safe mode: camera off, radio only listening, until the battery recovers."],
 ]
 
 

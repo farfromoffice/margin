@@ -70,10 +70,6 @@ Matches `sim/types/scenario.gd`: id, title, briefing, difficulty, duration_days 
 
 id, name, network (e.g. near earth, DSN), latitude_deg, longitude_deg (east positive), altitude_km, min_elevation_deg, cost_kusd_per_pass, g_over_t_dbk (optional), source, provenance. After changing a station, rerun the GMAT generator.
 
-## real_missions.json
-
-id, name, year, orbit_id, summary, url. Used for the "closest real mission" card on the report.
-
 ## failures.json
 
 id (the failure kind the simulator knows: battery_fade, solar_loss, radio_hang, instrument_hang), name, explain, fix, weight (relative chance of being drawn), magnitude_min and magnitude_max (share lost, fades only), source, provenance. The rules for each kind are in DESIGN.md under Live failures; a new id needs a rule there and in `sim/simulator.gd`.
