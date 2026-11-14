@@ -5,8 +5,7 @@ extends GutTest
 func _design() -> MissionDesign:
 	var d := MissionDesign.new()
 	d.scenario_id = &"wildfire_watch"
-	d.component_ids = [&"structure_6u", &"solar_6u_deployable", &"battery_43wh", &"radio_s_band", &"obc_32gb", &"adcs_small"]
-	d.instrument_ids = [&"camera_thermal"]
+	d.component_ids = [&"structure_6u", &"solar_6u_deployable", &"battery_43wh", &"radio_s_band", &"obc_32gb", &"adcs_small", &"camera_thermal"]
 	d.ground_station_ids = [&"svalbard", &"fairbanks"]
 	d.launcher_id = &"rideshare_sso"
 	d.orbit_id = &"sso_550"
@@ -33,7 +32,7 @@ func test_reference_design_launches_and_completes() -> void:
 func test_body_panels_cannot_feed_the_mwir_camera() -> void:
 	var d := _design()
 	d.component_ids[1] = &"solar_3u_body"
-	d.instrument_ids = [&"camera_fire_mwir"]
+	d.component_ids[d.component_ids.find(&"camera_thermal")] = &"camera_fire_mwir"
 	d.instrument_duty_cycle = 1.0
 	var r := _run(d)
 	assert_true(r.safe_entries > 0 or r.end_reason == RunResult.EndReason.POWER_LOST)

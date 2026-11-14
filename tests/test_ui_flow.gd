@@ -14,8 +14,7 @@ func before_each() -> void:
 func _reference_design() -> void:
 	GameState.new_mission(&"wildfire_watch", 1)
 	var d := GameState.design
-	d.component_ids = [&"structure_6u", &"solar_6u_deployable", &"battery_43wh", &"radio_s_band", &"obc_32gb", &"adcs_small"]
-	d.instrument_ids = [&"camera_thermal"]
+	d.component_ids = [&"structure_6u", &"solar_6u_deployable", &"battery_43wh", &"radio_s_band", &"obc_32gb", &"adcs_small", &"camera_thermal"]
 	d.ground_station_ids = [&"svalbard", &"fairbanks"]
 	d.launcher_id = &"rideshare_sso"
 	d.orbit_id = &"sso_550"

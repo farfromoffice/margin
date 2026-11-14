@@ -19,7 +19,7 @@ orbit data + stations -> OrbitTimeline (eclipse and contact intervals)
                  report, charts, daily summaries (DayState)
 ```
 
-`LaunchCheck` and `Warnings` run on `SimInput` before the simulation. All simulation code is pure `RefCounted` logic with no scene-tree access.
+`LaunchCheck` runs on the design and the catalog, `Warnings` on `SimInput` and the timeline, both before the simulation. All simulation code is pure `RefCounted` logic with no scene-tree access.
 
 ## Units
 
@@ -72,7 +72,7 @@ Resolved from `MissionDesign`, `Scenario` and `Catalog` before the run. Everythi
 
 | Field | Source |
 |---|---|
-| `duration_s` | scenario `duration_days` |
+| `duration_s` | scenario `duration_s`, the SI twin Catalog adds for `duration_days` |
 | `dt_s` | 60, fixed |
 | `solar_power_w` | sum of solar `generated_w_1au × sunlit_factor` |
 | `bus_power_w`, `bus_safe_power_w` | sums of `power_w` / `safe_power_w` over bus components except solar, comms and instruments |

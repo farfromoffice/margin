@@ -5,7 +5,7 @@ extends RefCounted
 ## there is no number to show (missing parts, unknown orbit).
 
 ## without one of these the run means nothing, so they block like any limit
-const REQUIRED_CATEGORIES: Array[String] = ["structure", "solar", "battery", "comms", "obc"]
+const REQUIRED_CATEGORIES: Array[String] = ["structure", "solar", "battery", "comms", "obc", "instrument"]
 
 
 ## catalog only needs get_entry(table, id). Budget counts hardware plus launcher;
@@ -16,7 +16,7 @@ static func check(design: MissionDesign, scenario: Scenario, catalog: Object) ->
 	var mass_kg: float = sums["mass_kg"]
 	var cost_kusd: float = sums["cost_kusd"]
 	var seen := {}
-	for id in design.component_ids + design.instrument_ids:
+	for id in design.component_ids:
 		var c: Dictionary = catalog.get_entry("components", id)
 		if c.is_empty():
 			out.append(_v(&"unknown_component", String(id), null, ""))
@@ -25,8 +25,6 @@ static func check(design: MissionDesign, scenario: Scenario, catalog: Object) ->
 	for category in REQUIRED_CATEGORIES:
 		if not seen.has(category):
 			out.append(_v(&"missing_part", category, null, ""))
-	if design.instrument_ids.is_empty() and not seen.has("instrument"):
-		out.append(_v(&"missing_part", "instrument", null, ""))
 	if design.ground_station_ids.is_empty():
 		out.append(_v(&"missing_part", "ground_station", null, ""))
 
@@ -57,7 +55,7 @@ static func check(design: MissionDesign, scenario: Scenario, catalog: Object) ->
 static func totals(design: MissionDesign, catalog: Object) -> Dictionary:
 	var mass_kg := 0.0
 	var cost_kusd := 0.0
-	for id in design.component_ids + design.instrument_ids:
+	for id in design.component_ids:
 		var c: Dictionary = catalog.get_entry("components", id)
 		mass_kg += float(c.get("mass_kg", 0.0))
 		cost_kusd += float(c.get("cost_kusd", 0.0))

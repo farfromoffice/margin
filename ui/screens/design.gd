@@ -245,7 +245,7 @@ func _frame_box() -> StyleBoxFlat:
 
 func _refresh() -> void:
 	var parts: Array = []
-	for id in _design.component_ids + _design.instrument_ids:
+	for id in _design.component_ids:
 		var c := Catalog.get_entry("components", id)
 		if not c.is_empty():
 			parts.append(c)
@@ -319,8 +319,7 @@ func _mass_limit(launcher: Dictionary) -> float:
 
 
 func _chosen_in(cat: String) -> StringName:
-	var ids := _design.instrument_ids if cat == "instrument" else _design.component_ids
-	for id in ids:
+	for id in _design.component_ids:
 		if Catalog.get_entry("components", id).get("category") == cat:
 			return id
 	return &""
@@ -328,14 +327,11 @@ func _chosen_in(cat: String) -> StringName:
 
 ## One part per category; empty id clears the category.
 func _pick(cat: String, id: StringName) -> void:
-	if cat == "instrument":
-		_design.instrument_ids = [id] as Array[StringName] if id != &"" else [] as Array[StringName]
-	else:
-		var kept: Array[StringName] = []
-		for other in _design.component_ids:
-			if Catalog.get_entry("components", other).get("category") != cat:
-				kept.append(other)
-		if id != &"":
-			kept.append(id)
-		_design.component_ids = kept
+	var kept: Array[StringName] = []
+	for other in _design.component_ids:
+		if Catalog.get_entry("components", other).get("category") != cat:
+			kept.append(other)
+	if id != &"":
+		kept.append(id)
+	_design.component_ids = kept
 	GameState.touch_design()

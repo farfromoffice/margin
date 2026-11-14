@@ -19,11 +19,9 @@ Download for Linux and Windows: _builds coming soon_
 Requires Godot 4.7 (GDScript, Compatibility renderer).
 
 ```sh
-godot -e project.godot                       # open the editor
-godot --headless -s addons/gut/gut_cmdln.gd  # run the tests (GUT, config in .gutconfig.json)
+godot -e project.godot  # open the editor
+tools/test.sh           # run the tests (GUT, config in .gutconfig.json); GODOT=/path/to/godot to pick the binary
 ```
-
-On a fresh clone run `godot --headless --editor --quit` once first so Godot imports the project and registers class names.
 
 Orbit eclipse and contact data in `data/orbits.json` come from GMAT R2025a. After changing an orbit or a ground station, regenerate them (Python 3, no extra packages):
 

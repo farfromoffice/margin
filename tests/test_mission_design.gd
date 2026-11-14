@@ -7,8 +7,7 @@ func test_json_round_trip_keeps_every_field() -> void:
 	d.requirements = {&"resolution_m": 30.0}
 	d.launcher_id = &"rocket_a"
 	d.orbit_id = &"leo_400"
-	d.component_ids = [&"panel_a", &"battery_a"]
-	d.instrument_ids = [&"camera_a"]
+	d.component_ids = [&"panel_a", &"battery_a", &"camera_a"]
 	d.ground_station_ids = [&"station_a"]
 
 	var back := MissionDesign.from_dict(JSON.parse_string(JSON.stringify(d.to_dict())))
@@ -17,8 +16,7 @@ func test_json_round_trip_keeps_every_field() -> void:
 	assert_eq(back.requirements, d.requirements)
 	assert_eq(back.launcher_id, &"rocket_a")
 	assert_eq(back.orbit_id, &"leo_400")
-	assert_eq(back.component_ids, [&"panel_a", &"battery_a"] as Array[StringName])
-	assert_eq(back.instrument_ids, [&"camera_a"] as Array[StringName])
+	assert_eq(back.component_ids, [&"panel_a", &"battery_a", &"camera_a"] as Array[StringName])
 	assert_eq(back.ground_station_ids, [&"station_a"] as Array[StringName])
 
 

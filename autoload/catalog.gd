@@ -84,6 +84,18 @@ static func _non_si_suffix(key: String) -> String:
 	return best
 
 
+static func provenance_error(entry: Dictionary) -> String:
+	if entry.has("provenance") and not str(entry["provenance"]) in PROVENANCE:
+		return "has unknown provenance %s" % entry["provenance"]
+	var fields: Variant = entry.get("provenance_fields", {})
+	if not fields is Dictionary:
+		return "has provenance_fields that is not an object"
+	for field in fields:
+		if not str(fields[field]) in PROVENANCE:
+			return "has unknown provenance %s for %s" % [fields[field], field]
+	return ""
+
+
 func _load_table(table: String) -> Dictionary:
 	var out := {}
 	var path := DATA_DIR + table + ".json"
@@ -103,8 +115,9 @@ func _load_table(table: String) -> Dictionary:
 		if not missing.is_empty():
 			push_warning("Catalog: %s entry %s missing %s, skipped" % [table, entry.get("id", "?"), missing])
 			continue
-		if entry.has("provenance") and not str(entry["provenance"]) in PROVENANCE:
-			push_warning("Catalog: %s entry %s has unknown provenance %s, skipped" % [table, entry["id"], entry["provenance"]])
+		var bad_label := provenance_error(entry)
+		if not bad_label.is_empty():
+			push_warning("Catalog: %s entry %s %s, skipped" % [table, entry["id"], bad_label])
 			continue
 		var id := StringName(str(entry["id"]))
 		if out.has(id):
