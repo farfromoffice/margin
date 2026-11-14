@@ -31,12 +31,18 @@ Orbit eclipse and contact data in `data/orbits.json` come from GMAT R2025a. Afte
 python3 tools/gmat/build_orbits.py /path/to/GMAT/R2025a/bin
 ```
 
+Code layout: `sim/` is pure simulation logic (see DESIGN.md), `ui/` holds the screens (`ui/screens/`), widgets, icons and fonts, `scenes/app.tscn` is the entry point and swaps screens on `EventBus.screen_requested`.
+
 Project docs:
 
 - [PROBLEM.md](PROBLEM.md): the challenge and how each item maps to a feature
 - [RESEARCH.md](RESEARCH.md): models, data sources, validation
 - [ROADMAP.md](ROADMAP.md): plan and progress
 - [data/README.md](data/README.md): data schema, units and provenance rules
+
+## Credits
+
+Fonts: [Orbitron](https://github.com/theleagueof/orbitron) and [Exo 2](https://github.com/googlefonts/Exo-2.0), SIL Open Font License 1.1, licenses in `ui/fonts/`. Icons, the Earth and sky shaders and the 3D spacecraft are made for this project.
 
 ## Team
 

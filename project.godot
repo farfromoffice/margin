@@ -12,7 +12,7 @@ config_version=5
 
 config/name="Margin"
 config/description="A space mission design game. Every gram counts."
-run/main_scene="res://scenes/main_menu.tscn"
+run/main_scene="res://scenes/app.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 
 [autoload]

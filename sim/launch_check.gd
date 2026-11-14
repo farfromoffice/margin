@@ -12,16 +12,15 @@ const REQUIRED_CATEGORIES: Array[String] = ["structure", "solar", "battery", "co
 ## ground station pass costs are not in it.
 static func check(design: MissionDesign, scenario: Scenario, catalog: Object) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
-	var mass_kg := 0.0
-	var cost_kusd := 0.0
+	var sums := totals(design, catalog)
+	var mass_kg: float = sums["mass_kg"]
+	var cost_kusd: float = sums["cost_kusd"]
 	var seen := {}
 	for id in design.component_ids + design.instrument_ids:
 		var c: Dictionary = catalog.get_entry("components", id)
 		if c.is_empty():
 			out.append(_v(&"unknown_component", String(id), null, ""))
 			continue
-		mass_kg += float(c.get("mass_kg", 0.0))
-		cost_kusd += float(c.get("cost_kusd", 0.0))
 		seen[str(c.get("category", ""))] = true
 	for category in REQUIRED_CATEGORIES:
 		if not seen.has(category):
@@ -38,7 +37,6 @@ static func check(design: MissionDesign, scenario: Scenario, catalog: Object) ->
 	if launcher.is_empty():
 		out.append(_v(&"missing_part", "launcher", null, ""))
 	else:
-		cost_kusd += float(launcher.get("cost_kusd", 0.0))
 		var capacity: Variant = launcher.get("capacity_kg", {})
 		var limit: Variant = capacity.get(String(design.orbit_id)) if capacity is Dictionary else null
 		if not (limit is int or limit is float):
@@ -52,6 +50,19 @@ static func check(design: MissionDesign, scenario: Scenario, catalog: Object) ->
 	if scenario.budget_kusd > 0.0 and cost_kusd > scenario.budget_kusd:
 		out.append(_v(&"over_budget", cost_kusd, scenario.budget_kusd, "kusd"))
 	return out
+
+
+## Mass of every part and cost of parts plus launcher, the numbers the limits
+## above are checked against. The design screen shows them live.
+static func totals(design: MissionDesign, catalog: Object) -> Dictionary:
+	var mass_kg := 0.0
+	var cost_kusd := 0.0
+	for id in design.component_ids + design.instrument_ids:
+		var c: Dictionary = catalog.get_entry("components", id)
+		mass_kg += float(c.get("mass_kg", 0.0))
+		cost_kusd += float(c.get("cost_kusd", 0.0))
+	cost_kusd += float(catalog.get_entry("launchers", design.launcher_id).get("cost_kusd", 0.0))
+	return {"mass_kg": mass_kg, "cost_kusd": cost_kusd}
 
 
 static func _v(kind: StringName, value: Variant, limit: Variant, unit: String) -> Dictionary:

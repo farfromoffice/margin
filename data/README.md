@@ -35,6 +35,7 @@ The simulation works in SI: bits, seconds, watts, joules, kilograms.
 | power_w | number | draw in Normal mode while on |
 | safe_power_w | number | draw in Safe mode; 0 for instruments |
 | source, provenance | string | see Provenance |
+| model | string | how the 3D preview draws it (`ui/spacecraft/spacecraft_model.gd`); unknown or missing falls back to the category default |
 
 Category specific fields:
 
