@@ -1,0 +1,12 @@
+[
+  {
+    "id": "leo_400",
+    "name": "Low Earth orbit, 400 km",
+    "body": "earth",
+    "altitude_km": 400,
+    "inclination_deg": 51.6,
+    "explain": "Close to Earth, so pictures are sharp and data comes down fast. Air drag slowly pulls you down, so missions here are short.",
+    "source": "",
+    "placeholder": true
+  }
+]

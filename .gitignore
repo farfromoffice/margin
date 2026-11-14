@@ -1,0 +1,13 @@
+# Godot
+.godot/
+/android/
+*.translation
+
+# Exports
+/build/
+*.tmp
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/

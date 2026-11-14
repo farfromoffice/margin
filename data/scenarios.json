@@ -1,0 +1,15 @@
+[
+  {
+    "id": "sandbox",
+    "title": "Sandbox",
+    "briefing": "No limits, no goals. Build anything and see what happens.",
+    "difficulty": 1,
+    "duration_days": 90,
+    "budget_kusd": 0,
+    "max_mass_kg": 0,
+    "allowed_orbit_ids": [],
+    "critical_resources": [],
+    "objectives": {},
+    "sandbox": true
+  }
+]

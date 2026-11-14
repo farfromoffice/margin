@@ -1,0 +1,12 @@
+[
+  {
+    "id": "example_station",
+    "name": "Example ground station",
+    "network": "near_earth",
+    "min_elevation_deg": 10,
+    "cost_kusd_per_pass": 0.0,
+    "g_over_t_dbk": 0.0,
+    "source": "",
+    "placeholder": true
+  }
+]
