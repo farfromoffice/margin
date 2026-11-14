@@ -6,6 +6,8 @@ extends Control
 ## With `interactive` on, dragging the globe spins and tilts it.
 
 const EARTH_SHADER := preload("res://ui/widgets/earth.gdshader")
+const DAY_MAP := preload("res://ui/earth/blue_marble.jpg")
+const NIGHT_MAP := preload("res://ui/earth/black_marble.jpg")
 
 var auto_spin := true
 ## radians per second when spinning on its own
@@ -32,7 +34,8 @@ var _dragging := false
 ## extra spin speed left over from a fling, fades out after release
 var _fling := 0.0
 
-const IDLE_SPIN := 0.05
+# negative turns the surface left to right, the way Earth turns with north up
+const IDLE_SPIN := -0.05
 const DRAG_RAD_PER_PX := 0.008
 const MAX_PITCH := 0.9
 
@@ -42,6 +45,8 @@ func _init() -> void:
 	_planet = ColorRect.new()
 	_planet.material = ShaderMaterial.new()
 	_planet.material.shader = EARTH_SHADER
+	_planet.material.set_shader_parameter("day_map", DAY_MAP)
+	_planet.material.set_shader_parameter("night_map", NIGHT_MAP)
 	_planet.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_planet)
 	# front half of the ring and the craft have to sit on top of the planet

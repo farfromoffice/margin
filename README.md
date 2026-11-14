@@ -43,6 +43,8 @@ Project docs:
 
 Fonts: [Orbitron](https://github.com/theleagueof/orbitron) and [Exo 2](https://github.com/googlefonts/Exo-2.0), SIL Open Font License 1.1, licenses in `ui/fonts/`. Icons, the Earth and sky shaders and the 3D spacecraft are made for this project.
 
+Earth imagery: [Blue Marble: Next Generation](https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/) (December 2004, topography and bathymetry) and [Black Marble 2016](https://science.nasa.gov/earth/earth-observatory/earth-at-night/maps), NASA Earth Observatory. Both scaled to 2048x1024 in `ui/earth/`.
+
 ## Team
 
 farfromoffice

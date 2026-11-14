@@ -1,30 +1,38 @@
 shader_type canvas_item;
-// Procedural Earth on a square rect: fbm continents, ice caps, drifting clouds,
-// a soft day/night terminator and a blue rim. Sun comes from the left.
+// Earth on a square rect from NASA imagery: Blue Marble for the day side, Black
+// Marble city lights for the night side, procedural clouds drifting on top, a
+// soft day/night terminator and a blue rim. Sun comes from the left.
 
 uniform float spin = 0.0;
 // tilts the globe toward or away from the viewer, radians
 uniform float pitch = 0.0;
 uniform vec3 sun_dir = vec3(-0.85, -0.25, 0.45);
+uniform sampler2D day_map : source_color, filter_linear_mipmap, repeat_enable;
+uniform sampler2D night_map : source_color, filter_linear_mipmap, repeat_enable;
 
-float hash(vec2 p) {
-	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+float hash3(vec3 p) {
+	return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453);
 }
 
-float noise(vec2 p) {
-	vec2 i = floor(p);
-	vec2 f = fract(p);
-	vec2 u = f * f * (3.0 - 2.0 * f);
-	return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),
-			mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+float noise3(vec3 p) {
+	vec3 i = floor(p);
+	vec3 f = fract(p);
+	vec3 u = f * f * (3.0 - 2.0 * f);
+	float a = mix(hash3(i), hash3(i + vec3(1.0, 0.0, 0.0)), u.x);
+	float b = mix(hash3(i + vec3(0.0, 1.0, 0.0)), hash3(i + vec3(1.0, 1.0, 0.0)), u.x);
+	float c = mix(hash3(i + vec3(0.0, 0.0, 1.0)), hash3(i + vec3(1.0, 0.0, 1.0)), u.x);
+	float d = mix(hash3(i + vec3(0.0, 1.0, 1.0)), hash3(i + vec3(1.0, 1.0, 1.0)), u.x);
+	return mix(mix(a, b, u.y), mix(c, d, u.y), u.z);
 }
 
-float fbm(vec2 p) {
+// fbm3 samples noise on the sphere itself. Lat/lon noise pinches into streaks
+// at the poles.
+float fbm3(vec3 p) {
 	float v = 0.0;
 	float a = 0.5;
-	for (int i = 0; i < 5; i++) {
-		v += a * noise(p);
-		p *= 2.03;
+	for (int i = 0; i < 4; i++) {
+		v += a * noise3(p);
+		p *= 2.07;
 		a *= 0.5;
 	}
 	return v;
@@ -42,20 +50,42 @@ void fragment() {
 		float sp = sin(pitch);
 		vec3 g = vec3(n.x, n.y * cp - n.z * sp, n.y * sp + n.z * cp);
 		float lon = atan(g.x, g.z) + spin;
-		float lat = asin(clamp(g.y, -1.0, 1.0));
-		vec2 q = vec2(lon * 1.6, lat * 2.2);
-		float h = fbm(q * 1.7 + vec2(3.1, 1.7));
-		vec3 ocean = mix(vec3(0.04, 0.18, 0.45), vec3(0.09, 0.36, 0.68), n.z);
-		vec3 land = mix(vec3(0.15, 0.42, 0.22), vec3(0.58, 0.5, 0.3), smoothstep(0.62, 0.78, h));
-		vec3 col = mix(ocean, land, smoothstep(0.54, 0.56, h));
-		col = mix(col, vec3(0.92, 0.95, 1.0), smoothstep(0.84, 0.9, abs(g.y)));
-		float clouds = smoothstep(0.55, 0.78, fbm(q * 3.0 + vec2(spin * 0.6 + 7.0, 3.0)));
-		col = mix(col, vec3(1.0), clouds * 0.55);
+		// canvas y points down, north is negative y
+		float lat = asin(clamp(-g.y, -1.0, 1.0));
+
+		// equirectangular maps: u runs from 180 w to 180 e, v from the north pole
+		// down. u jumps from 1 to 0 at the date line and the mip level picked from
+		// that jump would draw a seam.
+		// the gradient comes from a copy of u shifted half a turn, which is continuous there.
+		vec2 uv = vec2(fract(lon / TAU + 0.5), 0.5 - lat / PI);
+		vec2 uv_shifted = vec2(fract(lon / TAU), uv.y);
+		vec2 dx = dFdx(uv);
+		vec2 dy = dFdy(uv);
+		vec2 dx_s = dFdx(uv_shifted);
+		vec2 dy_s = dFdy(uv_shifted);
+		if (dot(dx_s, dx_s) + dot(dy_s, dy_s) < dot(dx, dx) + dot(dy, dy)) {
+			dx = dx_s;
+			dy = dy_s;
+		}
+		dx.x *= cos(lat);
+		dy.x *= cos(lat);
+		vec3 col = textureGrad(day_map, uv, dx, dy).rgb;
+		vec3 lights = textureGrad(night_map, uv, dx, dy).rgb;
+
+		float cloud_lon = lon + spin * 0.6;
+		vec3 sc = vec3(sin(cloud_lon) * cos(lat), g.y, cos(cloud_lon) * cos(lat));
+		float clouds = smoothstep(0.5, 0.72, fbm3(sc * 6.5 + vec3(7.0, 3.0, 1.0)));
+		col = mix(col, vec3(1.0), clouds * 0.5);
 
 		float d = dot(n, normalize(sun_dir));
 		float day = smoothstep(-0.12, 0.22, d);
-		vec3 night = col * 0.05 + vec3(0.015, 0.02, 0.05);
-		col = mix(night, col * (0.4 + 0.7 * max(d, 0.0)), day);
+		// Black Marble also has a moonlit layer where ice and deserts read about
+		// 0.17 and lean blue while city light is warm. Taking half the blue off
+		// red and green drops the moonlit layer to zero and keeps dim suburbs.
+		// The faint day map stands in for the moonlight.
+		float city = smoothstep(0.03, 0.3, min(lights.r, lights.g) - 0.5 * lights.b);
+		vec3 night = vec3(1.0, 0.78, 0.48) * city * 1.3 * (1.0 - clouds * 0.6) + col * 0.04 + vec3(0.008, 0.012, 0.025);
+		col = mix(night, col * (0.45 + 0.75 * max(d, 0.0)), day);
 		float rim = pow(1.0 - n.z, 2.5);
 		col += vec3(0.3, 0.6, 1.0) * rim * (0.15 + 0.6 * day);
 		COLOR = vec4(col, smoothstep(1.0, 0.985, r2));
