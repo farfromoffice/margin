@@ -1,7 +1,7 @@
 extends Control
-## Launch pad between the prediction and the run. Shows the preflight numbers
-## the design will fly with, then plays the launch in 3D and logs each
-## milestone as the scene reaches it. Nothing here is flown or steered: the
+## Launch pad between the prediction and the run. The 3D scene fills the
+## screen; the preflight numbers and the milestone log sit in panels opened from
+## the round buttons in the bottom right corner. Nothing here is flown or steered: the
 ## launcher reaches the orbit if the launch check passed, so the sequence is a
 ## story, not a simulation.
 
@@ -12,6 +12,8 @@ var _seq: VBoxContainer
 var _scene: LaunchScene
 ## milestone id -> line for the sequence log
 var _steps := {}
+## overlay panel name -> [round button, panel]
+var _overlays := {}
 
 
 func _ready() -> void:
@@ -20,28 +22,11 @@ func _ready() -> void:
 	var orbit := Catalog.get_entry("orbits", design.orbit_id)
 	var launcher := Catalog.get_entry("launchers", design.launcher_id)
 	var violations := LaunchCheck.check(design, scenario, Catalog)
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
-	var page := UiStyle.page(self, 20)
-	var row := UiStyle.hbox(16)
-	page.add_child(row)
-
-	var left := UiStyle.vbox(10)
-	left.custom_minimum_size.x = 360
-	left.add_child(UiStyle.section("LAUNCH PAD", "rocket", 14, UiStyle.CYAN))
-	left.add_child(UiStyle.heading(scenario.title, 28))
-	left.add_child(_preflight(design, orbit, launcher, violations))
-	var lp := UiStyle.panel(left)
-	lp.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	row.add_child(lp)
-
-	var middle := UiStyle.vbox(10)
-	middle.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	middle.add_child(UiStyle.section("Launch site", "rocket", 18, UiStyle.CYAN))
 	_scene = LaunchScene.new()
-	var frame := UiStyle.panel(_scene)
-	frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	middle.add_child(frame)
-	row.add_child(middle)
+	_scene.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(_scene)
 	var parts: Array = []
 	for id in design.component_ids:
 		var c := Catalog.get_entry("components", id)
@@ -53,39 +38,102 @@ func _ready() -> void:
 		_skip.disabled = true
 		_ops.disabled = false)
 
-	var right := UiStyle.vbox(10)
-	right.custom_minimum_size.x = 340
-	right.add_child(UiStyle.section("Launch sequence", "flag", 20))
+	# hmm, no full rect containers on top of the scene: they would eat the
+	# drag and wheel the camera needs, so every overlay is anchored on its own
+	var top := UiStyle.vbox(10)
+	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top.position = Vector2(20, 20)
+	top.add_child(UiStyle.section("LAUNCH PAD", "rocket", 14, UiStyle.CYAN))
+	top.add_child(UiStyle.heading(scenario.title, 28))
+	var actions := UiStyle.hbox(10)
+	actions.add_child(UiStyle.button("Back to prediction", func(): EventBus.screen_requested.emit(&"prediction")))
+	_go = UiStyle.button("Begin countdown", _begin)
+	_go.icon = UiStyle.icon("rocket")
+	_go.disabled = not violations.is_empty()
+	_skip = UiStyle.button("Skip to orbit", skip_sequence)
+	_skip.disabled = true
+	_ops = UiStyle.button("Start mission operations", _start_ops)
+	_ops.icon = UiStyle.icon("satellite")
+	_ops.disabled = true
+	actions.add_child(_go)
+	actions.add_child(_skip)
+	actions.add_child(_ops)
+	top.add_child(actions)
+	add_child(top)
+
+	var pad := UiStyle.vbox(10)
+	pad.add_child(UiStyle.section("Preflight", "rocket", 18, UiStyle.CYAN))
+	pad.add_child(_preflight(design, orbit, launcher, violations))
+
+	var seq_box := UiStyle.vbox(10)
+	seq_box.add_child(UiStyle.section("Launch sequence", "flag", 18))
 	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.custom_minimum_size.y = 300
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_seq = UiStyle.vbox(8)
 	_seq.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(_seq)
-	right.add_child(scroll)
-	right.add_child(UiStyle.label("The ascent is shown, not simulated. The launcher's own guidance flies it; your part was picking a launcher that can lift this mass to this orbit.", 13, UiStyle.MUTED, true))
-	_go = UiStyle.button("Begin countdown", _begin)
-	_go.icon = UiStyle.icon("rocket")
-	_go.disabled = not violations.is_empty()
-	_ops = UiStyle.button("Start mission operations", _start_ops)
-	_ops.icon = UiStyle.icon("satellite")
-	_ops.disabled = true
-	_skip = UiStyle.button("Skip to orbit", skip_sequence)
-	_skip.disabled = true
-	right.add_child(_go)
-	right.add_child(_skip)
-	right.add_child(_ops)
-	right.add_child(UiStyle.button("Back to prediction", func(): EventBus.screen_requested.emit(&"prediction")))
-	var rp := UiStyle.panel(right)
-	rp.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	row.add_child(rp)
+	seq_box.add_child(scroll)
+	seq_box.add_child(UiStyle.label("The ascent is shown, not simulated. The launcher's own guidance flies it; your part was picking a launcher that can lift this mass to this orbit.", 13, UiStyle.MUTED, true))
+
+	add_child(_overlay_dock([
+		[&"pad", "rocket", "Launch pad", pad],
+		[&"sequence", "flag", "Sequence", seq_box],
+	]))
+	# the GO or NO GO is the first thing to read, so the pad starts open
+	_show_overlay(&"pad")
 
 	_steps = _sequence(launcher, orbit)
+
+
+## Bottom right corner: one panel slot above a row of round buttons. Each
+## entry is [name, icon, tooltip, content]; only one panel shows at a time.
+func _overlay_dock(entries: Array) -> Control:
+	var dock := UiStyle.vbox(12)
+	dock.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dock.anchor_left = 1.0
+	dock.anchor_top = 1.0
+	dock.anchor_right = 1.0
+	dock.anchor_bottom = 1.0
+	dock.offset_left = -20.0
+	dock.offset_top = -20.0
+	dock.offset_right = -20.0
+	dock.offset_bottom = -20.0
+	# grows up and left from the corner, whatever panel is open
+	dock.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	dock.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	var row := UiStyle.hbox(16)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.size_flags_horizontal = Control.SIZE_SHRINK_END
+	for e in entries:
+		var p := UiStyle.panel(e[3])
+		p.custom_minimum_size.x = 380
+		p.size_flags_horizontal = Control.SIZE_SHRINK_END
+		p.visible = false
+		dock.add_child(p)
+		var b := UiStyle.round_button(e[1], e[2])
+		var id: StringName = e[0]
+		b.toggled.connect(func(on: bool): _show_overlay(id if on else &""))
+		row.add_child(b)
+		_overlays[id] = [b, p]
+	dock.add_child(row)
+	return dock
+
+
+## Opens one overlay panel and closes the rest, &"" closes them all.
+func _show_overlay(id: StringName) -> void:
+	for key in _overlays:
+		var b: Button = _overlays[key][0]
+		var p: Control = _overlays[key][1]
+		var on: bool = key == id
+		b.set_pressed_no_signal(on)
+		p.visible = on
 
 
 func _begin() -> void:
 	_go.disabled = true
 	_skip.disabled = false
+	_show_overlay(&"sequence")
 	_scene.launch()
 
 

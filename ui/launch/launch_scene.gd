@@ -138,7 +138,10 @@ func _init() -> void:
 
 
 func _ready() -> void:
-	resized.connect(func(): _caption.position = Vector2(14, size.y - 28))
+	var place := func(): _caption.position = Vector2(14, size.y - 28)
+	resized.connect(place)
+	# full screen hosts size us before _ready, so that resize is already gone
+	place.call()
 
 
 ## Builds the rocket for this launcher and loads the payload the player built.

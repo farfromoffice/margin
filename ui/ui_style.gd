@@ -86,6 +86,23 @@ static func button(text: String, on_pressed: Callable) -> Button:
 	return b
 
 
+## Round icon only toggle, for overlay controls sitting on top of a 3D view.
+## The tooltip is the only text, so put a label next to it if it matters.
+static func round_button(icon_name: String, tip: String, px := 60) -> Button:
+	var b := Button.new()
+	b.toggle_mode = true
+	b.icon = icon(icon_name)
+	b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	b.tooltip_text = tip
+	b.custom_minimum_size = Vector2(px, px)
+	# radius past half the size just clamps, so the box is a circle at any px
+	b.add_theme_stylebox_override("normal", _box(PANEL_LIGHT, px, 0, LINE, 1))
+	b.add_theme_stylebox_override("hover", _box(PANEL_LIGHT.lightened(0.12), px, 0, Color(CYAN, 0.7), 1))
+	b.add_theme_stylebox_override("pressed", _box(ACCENT.darkened(0.45), px, 0, ACCENT))
+	b.add_theme_stylebox_override("hover_pressed", _box(ACCENT.darkened(0.35), px, 0, ACCENT))
+	return b
+
+
 static func panel(content: Control) -> PanelContainer:
 	var p := PanelContainer.new()
 	p.add_child(content)
