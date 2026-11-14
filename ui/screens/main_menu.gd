@@ -49,6 +49,7 @@ func _ready() -> void:
 	add_child(_tiles)
 
 	_build_studio_logo()
+	_build_footer()
 	_show_tab(0)
 
 
@@ -155,6 +156,15 @@ func _build_studio_logo() -> void:
 	studio.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
 	studio.size = Vector2(130, 25)
 	studio.position += Vector2(-130 - 24, -25 - 30)
+
+
+func _build_footer() -> void:
+	var footer := UiStyle.label("Not affiliated with NASA.", 13, UiStyle.MUTED)
+	footer.name = "Footer"
+	footer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(footer)
+	footer.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
+	footer.position += Vector2(40, -34)
 
 
 func _show_tab(i: int) -> void:
