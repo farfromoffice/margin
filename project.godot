@@ -22,6 +22,7 @@ boot_splash/show_image=false
 Catalog="*res://autoload/catalog.gd"
 EventBus="*res://autoload/event_bus.gd"
 GameState="*res://autoload/game_state.gd"
+Sfx="*res://autoload/sfx.gd"
 
 [display]
 
