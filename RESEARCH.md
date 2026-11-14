@@ -87,19 +87,23 @@ The reference design is the one in `tests/test_wildfire_watch.gd`: 6U, 6U deploy
 
 ### Balance pass (Wildfire Watch)
 
-`tools/balance.gd` flies every design that passes the launch check: each structure, solar array, battery, radio and pointing system, each camera at 10, 25, 50 and 100 % time, every set of ground stations, every launcher and orbit pair. No failures and nobody at the controls, so it measures the design alone. 12,096 designs, goal 100,000 MB sent home in 30 days.
+`tools/balance.gd` flies every design that passes the launch check: each structure, solar array, battery, radio and pointing system (or none), each camera at 10, 25, 50 and 100 % time, every set of ground stations, every launcher and orbit pair. No failures and nobody at the controls, so it measures the design alone. 15,120 designs, goal 100,000 MB sent home in 30 days.
 
 | | Designs | Meet the goal | Cheapest that meets it |
 |---|---|---|---|
-| All | 12,096 | 26 % | 252 kUSD: thermal, X-band, free ISS launch, 100 % |
-| UHF radio | 4,032 | 0 % | |
-| S-band radio | 4,032 | 14 % | 567 kUSD: thermal, rideshare SSO 550, all three stations, 100 % |
-| X-band radio | 4,032 | 63 % | 252 kUSD |
-| Thermal camera | 4,032 | 16 % | 252 kUSD |
-| Multispectral camera | 4,032 | 33 % | 282 kUSD: X-band, ISS launch, 25 % |
-| Fire detection camera | 4,032 | 29 % | 532 kUSD: X-band, ISS launch, 25 % |
-| LEO 400 (ISS launch) | 6,048 | 15 % | 252 kUSD |
-| SSO 550 (rideshare) | 6,048 | 37 % | |
+| All | 15,120 | 26 % | 212 kUSD: 3U, body panels, X-band, thermal, no pointing system, free ISS launch, 100 % |
+| UHF radio | 5,040 | 0 % | |
+| S-band radio | 5,040 | 14 % | 527 kUSD: thermal, rideshare SSO 550, 100 % |
+| X-band radio | 5,040 | 63 % | 212 kUSD |
+| Thermal camera | 5,040 | 16 % | 212 kUSD |
+| Multispectral camera | 5,040 | 33 % | 242 kUSD: X-band, ISS launch, 25 % |
+| Fire detection camera | 5,040 | 29 % | 492 kUSD: X-band, ISS launch, 25 % |
+| LEO 400 (ISS launch) | 7,560 | 15 % | 212 kUSD |
+| SSO 550 (rideshare) | 7,560 | 37 % | 527 kUSD |
+| 3U structure | 6,048 | 25 % | 212 kUSD |
+| 6U structure | 9,072 | 26 % | 215 kUSD |
+
+The 6U deployable array fits only the 6U structure (`min_structure_u`). That removed 3,024 designs, every 3U structure carrying it, from the 18,144 the sweep flew before; the share that meets the goal went from 26.1 % to 25.9 %, and nothing else in the table moved by more than a point. The table before this sweep listed 12,096 designs and a 252 kUSD cheapest winner: it predates the designs without a pointing system.
 
 The reference design misses the goal at 10 % and 25 % camera time (32,342 and 80,856 MB) and meets it at 50 % (133,440 MB, downlink limited).
 
@@ -107,7 +111,7 @@ What the sweep says, as input for the playtest:
 
 - **The budget never binds.** The most expensive launchable design costs 953 kUSD against a 1,000 kUSD budget, and the cheapest winner spends a quarter of it. Every cost is fictional, so this is the knob to turn if budget should matter.
 - **No design is ever lost.** Safe mode always catches the battery before zero, so power costs science but never the spacecraft. Losses only come from live failures.
-- **The structure changes nothing in flight.** 3U and 6U give the same results. The launch check now enforces `max_payload_kg`, but the heaviest possible set of parts is 5.49 kg against the 3U frame's 5.66 kg, so it never binds with the current catalog and the sweep is unchanged.
+- **The structure still changes little.** It changes nothing in flight; its one effect is that only the 6U structure takes the 6U deployable array, and that array rarely decides the goal here (27.5 % of its designs meet it against 27.1 % with the 3U deployable). The launch check also enforces `max_payload_kg`, but the heaviest possible set of parts is 5.49 kg against the 3U frame's 5.66 kg, so that never binds.
 - **SSO 700 is out of reach.** Only the dedicated launcher flies there, at 7,500 kUSD.
 - **The UHF radio never wins**, which is the intended lesson: 9.6 kbit/s cannot move pictures.
 - Raising the goal makes the budget bind (above about 256,000 MB the free ISS launch cannot deliver enough), but it also rules out S-band, which the current goal keeps on purpose (DESIGN.md open question 6). The goal stays at 100,000 MB.
