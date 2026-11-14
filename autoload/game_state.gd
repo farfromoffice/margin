@@ -18,6 +18,10 @@ var last_warnings: Array[Dictionary] = []
 var last_result: RunResult
 ## the run before last_result, so the report can say whether the redesign helped
 var previous_result: RunResult
+## The mission flown on the operations screen. It is null before launch.
+var mission: Mission
+## The design of last_result flown with its launch settings and no player changes.
+var baseline_result: RunResult
 
 
 func new_mission(p_scenario_id: StringName, p_player_count: int) -> void:
@@ -31,6 +35,8 @@ func new_mission(p_scenario_id: StringName, p_player_count: int) -> void:
 	last_warnings.clear()
 	last_result = null
 	previous_result = null
+	mission = null
+	baseline_result = null
 	role_owner.clear()
 	for i in ROLES.size():
 		role_owner[ROLES[i]] = i % player_count
@@ -46,16 +52,26 @@ func scenario() -> Scenario:
 	return Catalog.get_scenario(scenario_id)
 
 
-## Simulates the current design and keeps the result for the run and report
-## screens. Launch check is the caller's job, this runs whatever it is given.
-func run_mission() -> RunResult:
+## start_mission builds the SimInput and the orbit timeline for the current design
+## and returns a Mission for the operations screen to fly. The caller runs the
+## launch check before.
+func start_mission() -> Mission:
 	var input := SimInput.from_design(design, scenario(), Catalog)
 	var orbit := Catalog.get_entry("orbits", design.orbit_id)
-	last_warnings = Warnings.compute(input, OrbitTimeline.build(orbit, design.ground_station_ids, input.duration_s))
-	# the timeline walks forward once, so the run gets a fresh one
 	var timeline := OrbitTimeline.build(orbit, design.ground_station_ids, input.duration_s)
-	previous_result = last_result
+	# Warnings.compute only reads timeline averages and does not move its cursors.
+	# The mission can use the same timeline.
+	last_warnings = Warnings.compute(input, timeline)
 	last_input = input
-	last_result = Simulator.run(input, timeline)
-	return last_result
+	mission = Mission.new(input, timeline)
+	return mission
+
+
+## finish_mission stores the result of the ended mission for the report and runs
+## the baseline, the same design without player changes.
+func finish_mission() -> void:
+	assert(mission != null and mission.state.done, "GameState: finish_mission before the mission ended")
+	previous_result = last_result
+	last_result = mission.state.result
+	baseline_result = mission.baseline()
 

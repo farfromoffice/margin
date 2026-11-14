@@ -37,6 +37,41 @@ static func objectives(scenario: Scenario, r: RunResult) -> Array[Dictionary]:
 	return out
 
 
+static func compare_runs(operated: RunResult, baseline: RunResult, scenario: Scenario) -> Dictionary:
+	return {
+		"intervened": not operated.commands.is_empty(),
+		"delivered_bits": _metric(operated.delivered_bits_total, baseline.delivered_bits_total, BITS_PER_MB),
+		"discarded_bits": _metric(operated.discarded_bits_total, baseline.discarded_bits_total, BITS_PER_MB),
+		"safe_time_s": _metric(operated.safe_time_s, baseline.safe_time_s, 60.0),
+		"completed": {
+			"operated": operated.end_reason == RunResult.EndReason.COMPLETED,
+			"baseline": baseline.end_reason == RunResult.EndReason.COMPLETED,
+		},
+		"objectives_met": {
+			"operated": _all_met(scenario, operated),
+			"baseline": _all_met(scenario, baseline),
+		},
+	}
+
+
+static func _metric(operated: float, baseline: float, floor_value: float) -> Dictionary:
+	var diff := operated - baseline
+	var threshold := maxf(floor_value, 0.001 * absf(baseline))
+	var verdict := &"same"
+	if diff > threshold:
+		verdict = &"more"
+	elif diff < -threshold:
+		verdict = &"less"
+	return {"operated": operated, "baseline": baseline, "diff": diff, "verdict": verdict}
+
+
+## _all_met returns true when every scenario goal was met. A scenario without goals
+## returns false.
+static func _all_met(scenario: Scenario, r: RunResult) -> bool:
+	var rows := objectives(scenario, r)
+	return not rows.is_empty() and rows.all(func(row): return row["met"])
+
+
 ## Splits a prediction into what was right, what was missed and what never happened.
 static func compare_prediction(predicted: Array[StringName], actual: Array[StringName]) -> Dictionary:
 	var hit: Array[StringName] = []

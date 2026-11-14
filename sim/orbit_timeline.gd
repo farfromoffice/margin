@@ -18,6 +18,8 @@ var contacts := PackedFloat64Array()
 ## results of the last advance() call
 var sunlit_s := 0.0
 var contact_s := 0.0
+## Number of contact intervals that began inside the last step.
+var contact_starts := 0
 
 var _eclipse_cursor := 0
 var _contact_cursor := 0
@@ -38,6 +40,18 @@ static func build(orbit: Dictionary, station_ids: Array[StringName], p_duration_
 	t.eclipse_fraction = clampf(float(orbit.get("eclipse_fraction", 0.0)), 0.0, 1.0)
 	t.eclipses = _build_eclipses(t.period_s, t.eclipse_fraction, p_duration_s)
 	t.contacts = _build_contacts(orbit, station_ids, p_duration_s)
+	return t
+
+
+## rewound returns a timeline with the same intervals and its cursors at the start.
+## Mission uses it to run the baseline.
+func rewound() -> OrbitTimeline:
+	var t := OrbitTimeline.new()
+	t.period_s = period_s
+	t.eclipse_fraction = eclipse_fraction
+	t.duration_s = duration_s
+	t.eclipses = eclipses
+	t.contacts = contacts
 	return t
 
 
@@ -68,9 +82,14 @@ func _overlap(list: PackedFloat64Array, from_s: float, to_s: float, is_eclipse: 
 	else:
 		_contact_cursor = i
 	var total := 0.0
+	var starts := 0
 	while i < n and list[i] < to_s:
 		total += minf(list[i + 1], to_s) - maxf(list[i], from_s)
+		if list[i] >= from_s:
+			starts += 1
 		i += 2
+	if not is_eclipse:
+		contact_starts = starts
 	return total
 
 

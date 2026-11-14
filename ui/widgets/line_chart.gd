@@ -18,6 +18,10 @@ var progress := 1.0:
 		queue_redraw()
 ## turns the value under the playhead into the label text
 var format := func(v: float) -> String: return "%.1f" % v
+## Value where a dashed reference line is drawn, in the same unit as values. A
+## negative value draws no line.
+var threshold := -1.0
+var threshold_label := ""
 
 const PAD := Vector2(10, 28)
 
@@ -35,7 +39,19 @@ func _draw() -> void:
 	draw_line(Vector2(plot.position.x, plot.end.y), plot.end, UiStyle.PANEL_LIGHT, 1.0)
 	draw_line(plot.position, Vector2(plot.end.x, plot.position.y), UiStyle.PANEL_LIGHT, 1.0)
 	draw_string(font, Vector2(PAD.x, 19), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, UiStyle.MUTED)
+	_draw_series(plot, font)
+	# The threshold is drawn last. The Safe mode bands and the series would cover it.
+	if threshold >= 0.0:
+		var ty := _y(plot, threshold)
+		var line_color := Color(UiStyle.BAD, 0.9)
+		draw_dashed_line(Vector2(plot.position.x, ty), Vector2(plot.end.x, ty), line_color, 1.0, 6.0)
+		var text_size := font.get_string_size(threshold_label, HORIZONTAL_ALIGNMENT_LEFT, -1, 12)
+		var at := Vector2(plot.end.x - text_size.x - 4, ty - 4)
+		draw_rect(Rect2(at - Vector2(3, text_size.y - 2), text_size + Vector2(6, 2)), UiStyle.PANEL)
+		draw_string(font, at, threshold_label, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, line_color)
 
+
+func _draw_series(plot: Rect2, font: Font) -> void:
 	var shown := mini(int(progress * total_steps), values.size())
 	if shown < 1 or plot.size.x < 2.0:
 		return

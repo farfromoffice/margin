@@ -51,12 +51,58 @@ func test_full_flow_reaches_the_report() -> void:
 	await wait_process_frames(2)
 	var run: Control = app.current
 	assert_eq(run.name, "run")
-	assert_not_null(GameState.last_result)
-	run._set_progress(1.0)
+	assert_not_null(GameState.mission)
+	assert_true(run._report.disabled, "no report while the mission flies")
+	run._finish_now()
 	assert_false(run._report.disabled)
+	assert_not_null(GameState.last_result)
+	assert_not_null(GameState.baseline_result)
 	var report: Control = await _go(&"report")
 	assert_eq(report.name, "report")
 	assert_eq(GameState.prediction, [&"power"] as Array[StringName])
+
+
+func _launch() -> Control:
+	_reference_design()
+	GameState.start_mission()
+	return await _go(&"run")
+
+
+func test_operations_clock_runs_and_auto_pauses_on_a_pass_with_the_radio_off() -> void:
+	var run: Control = await _launch()
+	var m: Mission = GameState.mission
+	var battery: LineChart = run._charts[0]
+	assert_eq(battery.threshold, m.input.safe_enter_fraction * m.input.battery_capacity_j, "Safe mode line on the battery chart")
+	# The screen also ticks on the frames GUT waited through. Pausing and resuming
+	# clears any partial step and the next second is measured exactly.
+	run._set_speed(0)
+	run._set_speed(1)
+	var before := m.state.step
+	run._process(1.0)
+	assert_eq(m.state.step - before, 240, "1x: 1 s of real time is 4 mission hours")
+	run._radio.button_pressed = false
+	run._process(6.0)
+	assert_true(run._clock.paused, "the next pass stops the clock")
+	var pressed: Array = run._speed_buttons.keys().filter(func(k): return run._speed_buttons[k].button_pressed)
+	assert_eq(pressed, [0], "only Pause shows as selected")
+	assert_true(run._banner.get_parent().visible)
+	assert_gt(m.state.contact_starts, 0)
+	var at := m.state.step
+	run._process(1.0)
+	assert_eq(m.state.step, at, "paused means paused")
+
+
+func test_in_flight_change_reaches_the_report() -> void:
+	var run: Control = await _launch()
+	run._process(0.5)
+	run._duty.value = 0.6
+	assert_eq(GameState.mission.state.result.commands.size(), 1)
+	run._finish_now()
+	assert_eq(GameState.last_result.commands.size(), 1)
+	var report: Control = await _go(&"report")
+	var texts := report.find_children("*", "Label", true, false).map(func(l): return l.text)
+	assert_true(texts.any(func(t): return t.contains("camera on 60 %")), "the change is listed")
+	assert_true(texts.any(func(t): return t.contains("left alone")), "and compared with the untouched design")
 
 
 func test_picking_a_part_replaces_the_old_one() -> void:
@@ -110,3 +156,16 @@ func test_expanding_the_3d_view_hides_the_side_panels() -> void:
 	design._preview.expand_toggled.emit(false)
 	for p in design._side_panels:
 		assert_true(p.visible)
+
+
+func test_operations_screen_fits_the_base_window_with_a_pause_banner() -> void:
+	var run: Control = await _launch()
+	run._set_speed(0)
+	var every_reason: Array[StringName] = AutoPause.TRIGGERS.duplicate()
+	run._banner.text = "Paused, Day 30, 23:59. " + Explain.pause_reasons(every_reason)
+	run._banner.get_parent().visible = true
+	await wait_process_frames(2)
+	var page: Control = run.get_child(0)
+	var needed := page.get_combined_minimum_size()
+	assert_lte(needed.x, 1280.0, "width at 1280x720")
+	assert_lte(needed.y, 720.0, "height at 1280x720")

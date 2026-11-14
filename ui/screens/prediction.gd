@@ -51,5 +51,5 @@ func _launch() -> void:
 	for f in _boxes:
 		if _boxes[f].button_pressed:
 			GameState.prediction.append(f)
-	GameState.run_mission()
+	GameState.start_mission()
 	EventBus.screen_requested.emit(&"run")
