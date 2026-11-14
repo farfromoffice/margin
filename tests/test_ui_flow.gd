@@ -32,8 +32,9 @@ func _go(screen: StringName) -> Control:
 
 func test_menu_play_opens_briefing() -> void:
 	assert_eq(app.current.name, "main_menu")
-	app.current.get_node("Center/Menu/PlayButton").pressed.emit()
-	await wait_process_frames(2)
+	app.current.find_child("PlayButton", true, false).pressed.emit()
+	# the menu plays its press and fade first
+	await wait_seconds(0.5)
 	assert_eq(app.current.name, "briefing")
 	assert_eq(GameState.scenario_id, &"wildfire_watch")
 
@@ -235,8 +236,9 @@ func test_report_lists_the_failures() -> void:
 
 
 func test_menu_opens_how_to_play_and_comes_back() -> void:
-	app.current.get_node("Center/Menu/HowToPlayButton").pressed.emit()
-	await wait_process_frames(2)
+	app.current.find_child("HowToPlayButton", true, false).pressed.emit()
+	# the menu plays its press and fade first
+	await wait_seconds(0.5)
 	assert_eq(app.current.name, "how_to_play")
 	EventBus.screen_requested.emit(&"main_menu")
 	await wait_process_frames(2)
