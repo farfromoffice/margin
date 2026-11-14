@@ -37,7 +37,7 @@ func _ready() -> void:
 	grid.add_child(_card("Power", _power_lines(r), "bolt"))
 
 	var actual := Outcome.limiting_factors(r)
-	col.add_child(_card("Your prediction", _prediction_lines(actual), "star"))
+	col.add_child(_card("Your prediction", _prediction_lines(Outcome.limiting_factors(GameState.design_result), actual), "star"))
 	var why := _why_lines(r, actual)
 	if not why.is_empty():
 		col.add_child(_card("What held the mission back", why, "satellite"))
@@ -94,18 +94,21 @@ func _goal_lines(s: Scenario, r: RunResult) -> Array:
 
 
 ## _why_lines explains each limiting factor with the design's numbers, says whether
-## the design left alone hit it too and names the ones the changes in flight
-## avoided. Both come from two whole flights, the flown one and the baseline;
-## nothing here is split per change since changes depend on each other.
+## it came from the design, the failures or the changes in flight and names the
+## ones the changes avoided. All of it comes from whole flights (flown, baseline
+## with the failures, design alone without them); nothing here is split per
+## change since changes depend on each other.
 func _why_lines(r: RunResult, actual: Array[StringName]) -> Array:
 	var out: Array = []
 	var m := GameState.mission
 	var base := GameState.baseline_result
 	var intervened := not r.commands.is_empty() and base != null
 	var in_base: Array[StringName] = Outcome.limiting_factors(base) if base else actual
+	var in_design: Array[StringName] = Outcome.limiting_factors(GameState.design_result) if GameState.design_result else in_base
 	var n := Outcome.factor_numbers(r, m.input, m.timeline)
 	for f in actual:
-		var lines := Explain.factor_lines(f, n, r, f in in_base, intervened)
+		var source := &"design" if f in in_design else (&"failures" if f in in_base else &"changes")
+		var lines := Explain.factor_lines(f, n, r, source)
 		out.append([lines[0], UiStyle.TEXT])
 		for i in range(1, lines.size()):
 			out.append([lines[i], UiStyle.MUTED])
@@ -183,12 +186,23 @@ func _operations_lines(r: RunResult, base: RunResult, s: Scenario) -> Array:
 ## Last flight and this one side by side, one row per choice and per result.
 ## Rows that differ are lit, so the player sees what the redesign changed and
 ## what that bought.
+## _failures_compared says whether two flights met the same failures. Different
+## failures make part of the difference luck, not design.
+func _failures_compared(before: Array[Dictionary], after: Array[Dictionary]) -> Label:
+	if before != after:
+		return UiStyle.label("The flights met different failures, so part of the difference is luck.", 16, UiStyle.WARN, true)
+	if after.is_empty():
+		return UiStyle.label("No failures on either flight.", 16, UiStyle.MUTED, true)
+	return UiStyle.label("Both flights met the same failures.", 16, UiStyle.MUTED, true)
+
+
 func _comparison(before: MissionDesign, prev: RunResult, after: MissionDesign, r: RunResult, s: Scenario) -> PanelContainer:
 	var box := UiStyle.vbox(8)
 	box.add_child(UiStyle.section("Last flight vs. this flight", "orbit"))
 	var rows := DesignCompare.rows(before, after, Catalog)
 	var n := DesignCompare.changed_count(rows)
 	box.add_child(UiStyle.label("Same design flown again." if n == 0 else "%d choice%s changed." % [n, "" if n == 1 else "s"], 16, UiStyle.MUTED))
+	box.add_child(_failures_compared(GameState.previous_failures, GameState.last_failures))
 	var grid := GridContainer.new()
 	grid.columns = 3
 	grid.add_theme_constant_override("h_separation", 18)
@@ -257,12 +271,15 @@ func _row_value(key: String, v: Variant) -> String:
 	return v if v != "" else "none"
 
 
-func _prediction_lines(actual: Array[StringName]) -> Array:
+## _prediction_lines holds the guess to the design alone, no failures and nobody at
+## the controls, since that is all the player could know before launch. Limits the
+## flight added on top are named apart and do not count against the guess.
+func _prediction_lines(design: Array[StringName], flown: Array[StringName]) -> Array:
 	var predicted := GameState.prediction
-	var c := Outcome.compare_prediction(predicted, actual)
+	var c := Outcome.compare_prediction(predicted, design)
 	var out: Array = [
 		["You expected: %s" % Explain.factor_list(predicted), UiStyle.TEXT],
-		["What limited it: %s" % Explain.factor_list(actual), UiStyle.TEXT],
+		["Your design alone was limited by: %s" % Explain.factor_list(design), UiStyle.TEXT],
 	]
 	if c["missed"].is_empty() and c["wrong"].is_empty():
 		out.append(["Spot on.", UiStyle.GOOD])
@@ -273,4 +290,8 @@ func _prediction_lines(actual: Array[StringName]) -> Array:
 			out.append(["Did not see coming: %s" % Explain.factor_list(c["missed"]), UiStyle.BAD])
 		if not c["wrong"].is_empty():
 			out.append(["Turned out fine: %s" % Explain.factor_list(c["wrong"]), UiStyle.WARN])
+	var added: Array[StringName] = flown.filter(func(f): return not f in design)
+	if not added.is_empty():
+		var cause := "your changes" if GameState.last_failures.is_empty() else "failures or your changes"
+		out.append(["In flight, %s also brought: %s. That does not count against your guess." % [cause, Explain.factor_list(added)], UiStyle.MUTED])
 	return out

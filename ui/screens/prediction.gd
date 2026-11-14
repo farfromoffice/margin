@@ -1,5 +1,5 @@
 extends Control
-## Before launch the players commit to what they think will hold the mission
+## Before launch the players commit to what they think will hold the design
 ## back. The report holds them to it.
 
 var _boxes := {}
@@ -13,8 +13,8 @@ func _ready() -> void:
 	col.custom_minimum_size.x = 720
 	page.add_child(col)
 	col.add_child(UiStyle.section("PREDICTION", "star", 14, UiStyle.CYAN))
-	col.add_child(UiStyle.heading("What will limit your mission?", 34))
-	col.add_child(UiStyle.label("Pick everything you expect to go wrong. After the run the report checks your guess.", 18, UiStyle.TEXT, true))
+	col.add_child(UiStyle.heading("What will limit your design?", 34))
+	col.add_child(UiStyle.label("Pick everything you expect to hold this design back if nothing breaks and nobody touches the controls. The report checks your guess against exactly that run; failures and your changes in flight are judged apart.", 18, UiStyle.TEXT, true))
 
 	var picks := UiStyle.vbox(10)
 	for f in Outcome.FACTORS:

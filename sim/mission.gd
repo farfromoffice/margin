@@ -94,6 +94,13 @@ func baseline() -> RunResult:
 	return Simulator.run(input, timeline.rewound(), [], failures)
 
 
+## design_alone runs the same SimInput with the launch settings, no failures and no
+## player changes: what the design does on its own, the run a prediction made
+## before launch can be held to.
+func design_alone() -> RunResult:
+	return Simulator.run(input, timeline.rewound(), [], [])
+
+
 func _finish_cycles() -> void:
 	if _cycling.is_empty() or state.done:
 		return

@@ -9,6 +9,10 @@ var _go: Button
 ## Ticked to launch a design with warnings. Null when there are none.
 var _accept: CheckBox
 var _blocked := false
+## failure mode picker and redraw, locked once the countdown starts
+var _failure_pick: OptionButton
+var _redraw: Button
+var _failure_note: Label
 var _ops: Button
 var _skip: Button
 var _seq: VBoxContainer
@@ -144,6 +148,8 @@ func _update_go() -> void:
 func _begin() -> void:
 	if _accept:
 		_accept.disabled = true
+	_failure_pick.disabled = true
+	_redraw.disabled = true
 	_go.disabled = true
 	_skip.disabled = false
 	_show_overlay(&"sequence")
@@ -196,6 +202,7 @@ func _preflight(design: MissionDesign, orbit: Dictionary, launcher: Dictionary, 
 			_accept.text = "I accept these risks"
 			_accept.toggled.connect(func(_on: bool): _update_go())
 			box.add_child(_accept)
+	box.add_child(_failure_choice())
 	for v in violations:
 		box.add_child(UiStyle.label("NO GO: %s" % Explain.violation(v), 15, UiStyle.BAD, true))
 	var go := violations.is_empty()
@@ -203,6 +210,44 @@ func _preflight(design: MissionDesign, orbit: Dictionary, launcher: Dictionary, 
 	verdict.add_theme_color_override("font_color", UiStyle.GOOD if go else UiStyle.BAD)
 	box.add_child(verdict)
 	return box
+
+
+## _failure_choice picks how many failures the flight may meet and draws new ones.
+## The draw stays the same from flight to flight until the player asks for a new one.
+func _failure_choice() -> Control:
+	var box := UiStyle.vbox(6)
+	var row := UiStyle.hbox(8)
+	row.add_child(UiStyle.label("Failures", 15))
+	_failure_pick = OptionButton.new()
+	for mode in [FailurePlan.Mode.TRAINING, FailurePlan.Mode.UNCERTAIN, FailurePlan.Mode.NONE]:
+		_failure_pick.add_item(Explain.failure_mode(mode), mode)
+	_failure_pick.select(_failure_pick.get_item_index(GameState.failure_mode))
+	_failure_pick.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_failure_pick.item_selected.connect(func(i: int):
+		GameState.failure_mode = _failure_pick.get_item_id(i) as FailurePlan.Mode
+		_show_failure_note(false))
+	row.add_child(_failure_pick)
+	_redraw = UiStyle.button("Draw new", func():
+		GameState.new_conditions()
+		_show_failure_note(true))
+	_redraw.tooltip_text = "Draw new failures for the next flight"
+	row.add_child(_redraw)
+	box.add_child(row)
+	_failure_note = UiStyle.label("", 13, UiStyle.MUTED, true)
+	box.add_child(_failure_note)
+	_show_failure_note(false)
+	return box
+
+
+func _show_failure_note(redrawn: bool) -> void:
+	var none := GameState.failure_mode == FailurePlan.Mode.NONE
+	_redraw.visible = not none
+	if none:
+		_failure_note.text = "A nominal flight: nothing breaks."
+	elif redrawn:
+		_failure_note.text = "New failures drawn. Comparing with the last flight now mixes design and luck."
+	else:
+		_failure_note.text = "Made up rates, not real CubeSat reliability. Every flight meets the same failures until you draw new ones."
 
 
 func _item(what: String, value: String, ok: bool, color := Color.TRANSPARENT) -> Control:

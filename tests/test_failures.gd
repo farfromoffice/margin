@@ -46,7 +46,7 @@ func test_plan_is_the_same_for_the_same_seed_and_stays_in_bounds() -> void:
 	for seed in range(40):
 		var a := FailurePlan.generate(seed, 30.0 * DAY_S, 60.0, entries)
 		assert_eq(a, FailurePlan.generate(seed, 30.0 * DAY_S, 60.0, entries))
-		assert_between(a.size(), FailurePlan.MIN_FAILURES, FailurePlan.MAX_FAILURES)
+		assert_between(a.size(), 1, 3, "training always brings a failure")
 		var kinds := {}
 		var last := -1.0
 		for f in a:
@@ -56,6 +56,20 @@ func test_plan_is_the_same_for_the_same_seed_and_stays_in_bounds() -> void:
 			assert_eq(fmod(float(f["t_s"]), 60.0), 0.0, "on a step boundary")
 			assert_gte(float(f["t_s"]), last)
 			last = float(f["t_s"])
+
+
+func test_each_mode_draws_its_own_count() -> void:
+	var entries := Catalog.all("failures")
+	var uncertain_sizes := {}
+	for seed in range(200):
+		assert_eq(FailurePlan.generate(seed, 30.0 * DAY_S, 60.0, entries, FailurePlan.Mode.NONE), [] as Array[Dictionary])
+		var u := FailurePlan.generate(seed, 30.0 * DAY_S, 60.0, entries, FailurePlan.Mode.UNCERTAIN)
+		assert_eq(u, FailurePlan.generate(seed, 30.0 * DAY_S, 60.0, entries, FailurePlan.Mode.UNCERTAIN), "same seed, same plan")
+		uncertain_sizes[u.size()] = true
+	for n in uncertain_sizes:
+		assert_between(n, 0, 3)
+	assert_true(uncertain_sizes.has(0), "an uncertain mission can fly without failures")
+	assert_true(uncertain_sizes.has(3), "and can meet three")
 
 
 func test_no_entries_means_no_failures() -> void:

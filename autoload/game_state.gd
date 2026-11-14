@@ -9,7 +9,8 @@ var design := MissionDesign.new()
 ## role -> player index; with one player everything points at 0
 var role_owner: Dictionary = {}
 var player_count := 1
-## hmm, keep the seed here so a replay with the same design gives the same run
+## hmm, keep the seed here so a replay with the same design gives the same run.
+## new_conditions draws another one.
 var run_seed := 0
 ## limiting factors the players expect, from Outcome.FACTORS; empty means "none"
 var prediction: Array[StringName] = []
@@ -24,11 +25,18 @@ var last_design: MissionDesign
 var previous_design: MissionDesign
 ## The mission flown on the operations screen. It is null before launch.
 var mission: Mission
-## Whether start_mission draws a failure plan. The same seed gives the same
+## How many failures start_mission draws. The same seed and mode give the same
 ## failures, so a redesign meets them again at the same times.
-var live_failures := true
+var failure_mode := FailurePlan.Mode.TRAINING
+## The failure plans last_result and previous_result met, so the report can say
+## whether two flights met the same failures.
+var last_failures: Array[Dictionary] = []
+var previous_failures: Array[Dictionary] = []
 ## The design of last_result flown with its launch settings and no player changes.
 var baseline_result: RunResult
+## The design of last_result with its launch settings, no failures and no player
+## changes. The report checks the prediction against it.
+var design_result: RunResult
 
 
 func new_mission(p_scenario_id: StringName, p_player_count: int) -> void:
@@ -44,8 +52,11 @@ func new_mission(p_scenario_id: StringName, p_player_count: int) -> void:
 	previous_result = null
 	last_design = null
 	previous_design = null
+	last_failures.clear()
+	previous_failures.clear()
 	mission = null
 	baseline_result = null
+	design_result = null
 	role_owner.clear()
 	for i in ROLES.size():
 		role_owner[ROLES[i]] = i % player_count
@@ -72,11 +83,15 @@ func start_mission() -> Mission:
 	# The mission can use the same timeline.
 	last_warnings = Warnings.compute(input, timeline)
 	last_input = input
-	var failures: Array[Dictionary] = []
-	if live_failures:
-		failures = FailurePlan.generate(run_seed, input.duration_s, input.dt_s, Catalog.all("failures"))
+	var failures := FailurePlan.generate(run_seed, input.duration_s, input.dt_s, Catalog.all("failures"), failure_mode)
 	mission = Mission.new(input, timeline, failures)
 	return mission
+
+
+## new_conditions draws a new seed. The next flight meets different failures.
+## Comparisons with earlier flights then mix design and luck.
+func new_conditions() -> void:
+	run_seed = randi()
 
 
 ## finish_mission stores the result of the ended mission for the report and runs
@@ -87,5 +102,8 @@ func finish_mission() -> void:
 	last_result = mission.state.result
 	previous_design = last_design
 	last_design = MissionDesign.from_dict(design.to_dict())
+	previous_failures = last_failures
+	last_failures = mission.failures.duplicate(true)
 	baseline_result = mission.baseline()
-
+	# without failures the baseline already is the design alone
+	design_result = baseline_result if mission.failures.is_empty() else mission.design_alone()

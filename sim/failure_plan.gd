@@ -4,10 +4,16 @@ extends RefCounted
 ## simulator only replays the plan, so a run with the same seed and the same
 ## commands stays identical, and the baseline meets the same failures.
 
-## Teaching values: every mission meets at least one failure, so there is always
-## something to manage, and never so many that the design stops mattering.
-const MIN_FAILURES := 1
-const MAX_FAILURES := 3
+## How many failures a mission may meet. TRAINING always brings one, so there is
+## something to manage, UNCERTAIN may bring none, NONE flies a nominal mission.
+enum Mode { NONE, UNCERTAIN, TRAINING }
+## Mode -> [fewest, most]. Teaching values, not measured CubeSat reliability; never
+## so many that the design stops mattering.
+const COUNTS := {
+	Mode.NONE: [0, 0],
+	Mode.UNCERTAIN: [0, 3],
+	Mode.TRAINING: [1, 3],
+}
 ## Nothing strikes in the first or last tenth, there would be no time to react
 ## or nothing left to lose.
 const WINDOW_START := 0.1
@@ -16,7 +22,7 @@ const WINDOW_END := 0.9
 
 ## Returns [{t_s, kind, magnitude}] sorted by t_s. entries are failures.json rows;
 ## each kind strikes at most once. t_s sits on a step boundary.
-static func generate(seed: int, duration_s: float, dt_s: float, entries: Array) -> Array[Dictionary]:
+static func generate(seed: int, duration_s: float, dt_s: float, entries: Array, mode := Mode.TRAINING) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 	if entries.is_empty() or duration_s <= 0.0 or dt_s <= 0.0:
 		return out
@@ -26,7 +32,7 @@ static func generate(seed: int, duration_s: float, dt_s: float, entries: Array) 
 	# must not depend on load order or the same seed draws different failures
 	var pool := entries.duplicate()
 	pool.sort_custom(func(a, b): return str(a["id"]) < str(b["id"]))
-	var count := mini(rng.randi_range(MIN_FAILURES, MAX_FAILURES), pool.size())
+	var count := mini(rng.randi_range(COUNTS[mode][0], COUNTS[mode][1]), pool.size())
 	var steps := int(duration_s / dt_s)
 	for n in count:
 		var e: Dictionary = _pick(rng, pool)

@@ -4,6 +4,14 @@ All notable changes to Margin are listed here. The format follows [Keep a Change
 
 ## [Unreleased]
 
+### Added
+
+- Failure modes on the launch pad: Training (1 to 3 failures, as before), Uncertain (0 to 3) or None, and a button to draw new failures. The report says whether two flights met the same failures.
+
+### Changed
+
+- The prediction is checked against the design alone, without failures or changes in flight; what those added is named apart. The report also tells limits the failures brought from limits of the design.
+
 ### Changed
 
 - Flying without a pointing system now costs pictures: the camera faces the ground about a quarter of the time. The design screen and launch pad say so.

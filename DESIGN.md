@@ -135,7 +135,7 @@ Battery depletion ends the mission in either mode. With sane thresholds Normal m
 
 ## Live failures
 
-Before launch `FailurePlan.generate(run_seed, duration_s, dt_s, failures.json rows)` draws the plan: 1 to 3 failures, each kind at most once, kind by `weight`, time uniform on a step boundary between 10 % and 90 % of the mission, magnitude uniform in `[magnitude_min, magnitude_max]`. The plan is a list `{t_s, kind, magnitude}` sorted by time. `run_seed` is drawn once per new mission, so flying a redesign meets the same failures at the same times. `GameState.live_failures` switches the draw off.
+Before launch `FailurePlan.generate(run_seed, duration_s, dt_s, failures.json rows, mode)` draws the plan: a count from `FailurePlan.COUNTS[mode]` (Training 1 to 3, the default; Uncertain 0 to 3; None 0), each kind at most once, kind by `weight`, time uniform on a step boundary between 10 % and 90 % of the mission, magnitude uniform in `[magnitude_min, magnitude_max]`. The plan is a list `{t_s, kind, magnitude}` sorted by time. `run_seed` is drawn once per new mission, so flying a redesign in the same mode meets the same failures at the same times. The player picks `GameState.failure_mode` on the launch pad, and "Draw new" calls `GameState.new_conditions()` for a new seed. The counts are teaching values, not CubeSat reliability, and the launch pad says so.
 
 The simulator only replays the plan. At the start of each step every failure with `t_s ≤ t` strikes, is logged as a `failure` event and fires the `failure` auto-pause:
 
@@ -209,13 +209,15 @@ When the mission ends, the same `SimInput` is run again with no commands: the de
 
 ## What held the mission back
 
-The report explains each limiting factor with the run's own numbers (`Outcome.factor_numbers`): Safe mode entries and time, pictures never taken and the energy per orbit at the launch settings for power; memory size, data thrown away, camera output and radio capacity per day for storage; pass minutes per day, radio capacity, camera output and the data left behind for downlink. Each also names what it depends on in the design, as facts. Then it says where the factor came from by comparing two whole flights: if the no-intervention baseline hit it too, it comes from the design; if only the flown mission did, from the changes in flight; a factor only the baseline hit is listed as avoided.
+The report explains each limiting factor with the run's own numbers (`Outcome.factor_numbers`): Safe mode entries and time, pictures never taken and the energy per orbit at the launch settings for power; memory size, data thrown away, camera output and radio capacity per day for storage; pass minutes per day, radio capacity, camera output and the data left behind for downlink. Each also names what it depends on in the design, as facts. Then it says where the factor came from by comparing whole flights. `Mission.design_alone()` flies the design with its launch settings, no failures and no commands (`GameState.design_result`; without failures it is the baseline itself). A factor the design alone hits comes from the design; one only the baseline with the failures hits came from the failures; one only the flown mission hit came from the changes in flight. A factor only the baseline hit is listed as avoided.
+
+**Prediction.** The guess made before launch is checked against the design alone, since failures and the changes in flight are unknown then (the failure mode is only picked later, on the launch pad). Factors the flown mission added on top are named in a separate line and do not count against the guess.
 
 There is deliberately no effect per change. Replaying the flight without one change, keeping the others, was tested on 120 random missions with planned failures and 2 to 5 random changes each: for changes worth over 1 % of the data it agreed in sign with adding that change alone to the untouched flight only 58 % of the time, and the per-change effects missed the total by a median 22 % (over 100 % for one mission in ten). Changes depend on each other (radio off, later back on; camera down, later up), so a split per change would read as exact when it is not.
 
 ## Design comparison
 
-From the second flight of a mission on, the report puts the last flight and this one side by side. `GameState.finish_mission` keeps a copy of the flown design next to each result (`last_design`, `previous_design`), since the design screen edits `design` in place. `DesignCompare.rows(before, after, catalog)` returns one row per choice, `{key, before, after, changed}`: orbit, launcher, each part category, ground stations (sorted names, so order does not count), duty cycle, then total mass and cost. Changed rows are highlighted. The result rows reuse `Outcome.compare_runs` with the earlier flight as the baseline, so the same threshold decides what counts as a difference. Failures are not part of the comparison: both flights meet the same plan from the mission seed.
+From the second flight of a mission on, the report puts the last flight and this one side by side. `GameState.finish_mission` keeps a copy of the flown design next to each result (`last_design`, `previous_design`), since the design screen edits `design` in place. `DesignCompare.rows(before, after, catalog)` returns one row per choice, `{key, before, after, changed}`: orbit, launcher, each part category, ground stations (sorted names, so order does not count), duty cycle, then total mass and cost. Changed rows are highlighted. The result rows reuse `Outcome.compare_runs` with the earlier flight as the baseline, so the same threshold decides what counts as a difference. Failures are not part of the comparison rows. `GameState.finish_mission` keeps the plan each flight met (`last_failures`, `previous_failures`), and the report says whether both flights met the same failures; after a new draw or a mode change it warns that part of the difference is luck.
 
 ## RunResult
 
@@ -272,7 +274,7 @@ sim/sim_state.gd         SimState
 sim/mission_clock.gd     MissionClock: real time -> step count
 sim/auto_pause.gd        AutoPause: triggers, arming
 sim/mission.gd           Mission: state + controls + command log + auto-pause + power cycle
-sim/failure_plan.gd      FailurePlan.generate(seed, duration_s, dt_s, entries)
+sim/failure_plan.gd      FailurePlan.generate(seed, duration_s, dt_s, entries, mode)
 sim/launch_check.gd      LaunchCheck.check(design, scenario, catalog) -> violations
 sim/design_compare.gd    DesignCompare.rows(before, after, catalog) -> one row per choice
 sim/warnings.gd          Warnings.compute(input, timeline) -> warnings

@@ -5,7 +5,7 @@ extends Control
 const PHASES := [
 	["flag", "1. Briefing", "Read what the mission is for, how long it flies and the limits on money, mass and orbit."],
 	["cube", "2. Design", "Pick the parts, the orbit, the launcher and the ground stations. The panel on the right shows mass, cost, power per orbit and data per day as you go. Launch stays locked until the design fits."],
-	["star", "3. Prediction", "Guess what will hold the mission back: power, storage or downlink. The report checks your guess."],
+	["star", "3. Prediction", "Guess what will hold your design back: power, storage or downlink, if nothing breaks and nobody touches the controls. The report checks your guess against that run."],
 	["rocket", "4. Launch pad", "Last look at the numbers, then watch the launch. The launcher flies itself; your choice of launcher was the decision."],
 	["satellite", "5. Operations", "The mission runs live. Change the camera time and the radio, react to pauses and failures."],
 	["data", "6. Report", "Where the data went, what limited it, and how your flying compared with leaving the spacecraft alone. Then redesign and fly again."],
@@ -16,7 +16,7 @@ const IDEAS := [
 	["camera", "Pointing", "A pointing system turns the spacecraft so the camera faces the ground. Without one it faces the ground only about a quarter of the time, so only that share of the pictures count."],
 	["chip", "Data", "The camera fills the memory, the radio empties it, but only while a ground station is in view. A full memory throws new pictures away."],
 	["orbit", "Time", "Pause, 1×, 4× or 16×. The game pauses on its own when a decision is due: battery low, memory filling, a pass with the radio off, or a failure."],
-	["gyro", "Failures", "Parts break in flight. A frozen radio or camera comes back with a restart (the Restart buttons under Spacecraft health light up when one is needed). A weaker battery or solar array stays weak: use less power for the rest of the mission."],
+	["gyro", "Failures", "Parts break in flight. A frozen radio or camera comes back with a restart (the Restart buttons under Spacecraft health light up when one is needed). A weaker battery or solar array stays weak: use less power for the rest of the mission. On the launch pad you pick how many may strike: Training (1 to 3), Uncertain (0 to 3) or None."],
 	["weight", "Margin", "Every gram, watt and megabyte you keep spare is margin. Margin is what lets the mission survive the eclipse, the slow pass and the failure you did not plan for."],
 	["star", "Where numbers come from", "Every part carries a source and a label: documented, approximation or fictional. Orbits and passes come from NASA GMAT runs. Failure timing is a teaching value."],
 	["planet", "What the model leaves out", "Power and data are simple averages each minute. The pictures are counted as megabytes: the game makes no real images and finds no real fires. No air drag, heat or radio link budget. Costs and failure rates are made up."],

@@ -8,7 +8,7 @@ var app: Control
 func before_each() -> void:
 	# random failures would make the pause tests flaky, the ones that want a
 	# failure plant their own
-	GameState.live_failures = false
+	GameState.failure_mode = FailurePlan.Mode.NONE
 	app = load("res://scenes/app.tscn").instantiate()
 	add_child_autofree(app)
 	await wait_process_frames(1)
@@ -138,6 +138,30 @@ func test_second_flight_compares_with_the_first() -> void:
 	var texts := report.find_children("*", "Label", true, false).map(func(l): return l.text)
 	assert_has(texts, "Last flight vs. this flight")
 	assert_has(texts, "1 choice changed.")
+	assert_has(texts, "No failures on either flight.")
+
+
+func test_new_failures_make_the_comparison_part_luck() -> void:
+	GameState.failure_mode = FailurePlan.Mode.TRAINING
+	_reference_design()
+	GameState.run_seed = 1
+	GameState.start_mission()
+	var run: Control = await _go(&"run")
+	run._finish_now()
+	GameState.start_mission()
+	run = await _go(&"run")
+	run._finish_now()
+	var texts: Array = await _report_lines()
+	assert_has(texts, "Both flights met the same failures.", "the same seed brings the same failures back")
+	assert_false(GameState.baseline_result.events.filter(func(e): return e["kind"] == &"failure").is_empty(), "the baseline meets the failures")
+	assert_true(GameState.design_result.events.filter(func(e): return e["kind"] == &"failure").is_empty(), "the prediction is checked without them")
+	GameState.run_seed = 2
+	GameState.start_mission()
+	run = await _go(&"run")
+	run._finish_now()
+	assert_ne(GameState.last_failures, GameState.previous_failures)
+	texts = await _report_lines()
+	assert_has(texts, "The flights met different failures, so part of the difference is luck.")
 
 
 func test_launch_waits_for_accepted_warnings() -> void:
@@ -151,6 +175,25 @@ func test_launch_waits_for_accepted_warnings() -> void:
 	assert_false(launch._go.disabled)
 	launch._accept.button_pressed = false
 	assert_true(launch._go.disabled)
+
+
+func test_launch_pad_picks_the_failure_mode_and_draws_new_failures() -> void:
+	_reference_design()
+	var launch: Control = await _go(&"launch")
+	var pick: OptionButton = launch._failure_pick
+	assert_eq(pick.get_selected_id(), FailurePlan.Mode.NONE, "shows the current mode")
+	assert_false(launch._redraw.visible, "nothing to redraw on a nominal flight")
+	var i := pick.get_item_index(FailurePlan.Mode.TRAINING)
+	pick.select(i)
+	pick.item_selected.emit(i)
+	assert_eq(GameState.failure_mode, FailurePlan.Mode.TRAINING)
+	assert_true(launch._redraw.visible)
+	var seed := GameState.run_seed
+	launch._redraw.pressed.emit()
+	assert_ne(GameState.run_seed, seed, "a new draw")
+	assert_between(GameState.start_mission().failures.size(), 1, 3)
+	launch._begin()
+	assert_true(pick.disabled, "locked once the countdown starts")
 
 
 func test_launch_without_warnings_needs_no_acceptance() -> void:
@@ -185,6 +228,25 @@ func test_report_blames_a_limit_on_the_changes_in_flight() -> void:
 	assert_true(texts.any(func(t): return t.begins_with("Memory:")), "a silent radio fills the memory")
 	assert_true(texts.any(func(t): return "came from the changes in flight" in t), "the design alone was fine")
 	assert_has(texts, "Mission complete, goal missed", "surviving is not meeting the goal")
+	assert_true(texts.any(func(t): return t.begins_with("In flight, your changes also brought: ") and Explain.factor(&"storage") in t), "the full memory came from the flying, not the design")
+	assert_false(texts.any(func(t): return t.begins_with("Did not see coming")), "so it does not count against the guess")
+
+
+func test_report_blames_a_limit_on_the_failures_not_the_guess() -> void:
+	_reference_design()
+	GameState.prediction.assign([] as Array[StringName])
+	GameState.start_mission()
+	# a solar loss far beyond failures.json, therefore the power limit is certain
+	var plan: Array[Dictionary] = [{"t_s": 86400.0, "kind": &"solar_loss", "magnitude": 0.9}]
+	GameState.mission = Mission.new(GameState.mission.input, GameState.mission.timeline, plan)
+	var run: Control = await _go(&"run")
+	run._finish_now()
+	assert_false(&"power" in Outcome.limiting_factors(GameState.design_result), "the design alone has power to spare")
+	var texts: Array = await _report_lines()
+	assert_true(texts.any(func(t): return t.begins_with("Power:")))
+	assert_true(texts.any(func(t): return "the failures in flight brought it" in t))
+	assert_true(texts.any(func(t): return t.begins_with("In flight, failures or your changes also brought: ")), "named apart from the guess")
+	assert_false(texts.any(func(t): return t.begins_with("Did not see coming")), "no guess could have seen it")
 
 
 func test_picking_a_part_replaces_the_old_one() -> void:

@@ -45,7 +45,10 @@ const FACTOR_LEVERS := {
 }
 
 
-static func factor_lines(f: StringName, n: Dictionary, r: RunResult, in_baseline: bool, intervened: bool) -> Array[String]:
+## factor_lines explains one limiting factor with the run's numbers and says where it
+## came from: source is &"design" (the design alone hits it), &"failures" (only with
+## the failures) or &"changes" (only with the changes in flight).
+static func factor_lines(f: StringName, n: Dictionary, r: RunResult, source: StringName) -> Array[String]:
 	var lines: Array[String] = []
 	var made := mb(n["made_per_day"])
 	var sendable := mb(n["sendable_per_day"])
@@ -59,10 +62,13 @@ static func factor_lines(f: StringName, n: Dictionary, r: RunResult, in_baseline
 		&"downlink":
 			lines.append("Downlink: %d minutes over the ground stations a day let the radio send %s a day; the camera made %s a day on average. %s was thrown away or still on board at the end." % [roundi(float(n["contact_s_per_day"]) / 60.0), sendable, made, mb(r.discarded_bits_total + r.stored_bits_end)])
 	lines.append(FACTOR_LEVERS[f])
-	if not intervened or in_baseline:
-		lines.append("The design left alone hit this too, so it comes from the design.")
-	else:
-		lines.append("The design left alone did not hit this; it came from the changes in flight.")
+	match source:
+		&"design":
+			lines.append("The design alone, with nothing broken and nobody at the controls, hits this too, so it comes from the design.")
+		&"failures":
+			lines.append("The design alone does not hit this; the failures in flight brought it.")
+		_:
+			lines.append("The design left alone did not hit this; it came from the changes in flight.")
 	return lines
 
 
@@ -230,6 +236,17 @@ static func pause_reasons(fired: Array[StringName]) -> String:
 
 
 ## Short name of a failure kind from failures.json, or the raw id if it is gone.
+## failure_mode names a FailurePlan mode with its count, "Uncertain: 0 to 3".
+static func failure_mode(mode: FailurePlan.Mode) -> String:
+	var n: Array = FailurePlan.COUNTS[mode]
+	match mode:
+		FailurePlan.Mode.NONE:
+			return "None: nothing breaks"
+		FailurePlan.Mode.UNCERTAIN:
+			return "Uncertain: %d to %d" % n
+	return "Training: %d to %d" % n
+
+
 static func failure_name(kind: StringName) -> String:
 	return str(Catalog.get_entry("failures", kind).get("name", kind))
 
