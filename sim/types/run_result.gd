@@ -27,11 +27,14 @@ var missed_bits_total := 0.0
 var safe_time_s := 0.0
 var safe_entries := 0
 
-## [{t_s, kind (&"safe_enter" | &"safe_exit" | &"power_lost"), energy_j}]
+## [{t_s, kind (&"safe_enter" | &"safe_exit" | &"power_lost" | &"failure" | &"recovered"), energy_j}]
+## failure and recovered events also carry the failure kind in "failure".
 var events: Array[Dictionary] = []
 ## The player's changes during the flight in the order they were made. Each entry
 ## is {t_s, control, value}.
 var commands: Array[Dictionary] = []
+## The failure plan the run met, [{t_s, kind, magnitude}].
+var failures: Array[Dictionary] = []
 
 
 func step_count() -> int:

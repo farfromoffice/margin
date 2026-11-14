@@ -22,6 +22,9 @@ var _duty_label: Label
 var _duty_dragging := false
 var _radio: CheckButton
 var _forecast: Label
+var _faults: Label
+var _cycle_radio: Button
+var _cycle_camera: Button
 var _finish: Button
 var _report: Button
 var _next_event := 0
@@ -143,6 +146,17 @@ func _build_side() -> Control:
 	_radio.button_pressed = _mission.controls.radio_enabled
 	_radio.toggled.connect(func(on: bool): _set_control(Controls.RADIO_ENABLED, on))
 	body.add_child(_radio)
+	body.add_child(UiStyle.section("Spacecraft health", "chip"))
+	_faults = UiStyle.label("", 15, UiStyle.TEXT, true)
+	_faults.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.add_child(_faults)
+	var cycles := UiStyle.hbox(6)
+	_cycle_radio = UiStyle.button("Power-cycle radio", _power_cycle.bind(Controls.RADIO_ENABLED))
+	_cycle_camera = UiStyle.button("Power-cycle camera", _power_cycle.bind(Controls.DUTY_CYCLE))
+	for b in [_cycle_radio, _cycle_camera]:
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		cycles.add_child(b)
+	body.add_child(cycles)
 	_forecast = UiStyle.label("", 15, UiStyle.MUTED, true)
 	_forecast.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.add_child(_forecast)
@@ -204,9 +218,25 @@ func _set_control(control: StringName, value: Variant) -> void:
 		_update_forecast()
 
 
+## Power cycles take one mission step, so they also work while paused: the
+## switch back happens on the first step after the clock resumes.
+func _power_cycle(control: StringName) -> void:
+	var logged := _mission.state.result.commands.size()
+	_mission.power_cycle(control)
+	var commands := _mission.state.result.commands
+	for i in range(logged, commands.size()):
+		_log_line(Explain.command(commands[i]) + " (power cycle)", UiStyle.CYAN)
+	_sync_controls()
+	_refresh_health()
+
+
 func _auto_paused(fired: Array[StringName]) -> void:
 	_set_speed(0)
-	_banner.text = "Paused, %s. %s" % [Explain.mission_time(_mission.state.t_s), Explain.pause_reasons(fired)]
+	var text := Explain.pause_reasons(fired)
+	if AutoPause.FAILURE in fired:
+		var alerts := _mission.state.failures_started.map(func(k): return Explain.failure_alert(k))
+		text = (" ".join(alerts) + " " + text).strip_edges()
+	_banner.text = "Paused, %s. %s" % [Explain.mission_time(_mission.state.t_s), text]
 	_banner.get_parent().visible = true
 	for f in fired:
 		_log_line("%s: paused, %s." % [Explain.mission_time(_mission.state.t_s), Explain.PAUSE_NAMES[f].to_lower()], UiStyle.WARN)
@@ -241,6 +271,37 @@ func _refresh() -> void:
 		_next_event += 1
 	if day != _forecast_day:
 		_update_forecast()
+	_sync_controls()
+	_refresh_health()
+
+
+## Power cycles move the controls behind the widgets' backs, this puts them back
+## in line without logging anything.
+func _sync_controls() -> void:
+	if not _duty_dragging and not is_equal_approx(_duty.value, _mission.controls.duty_cycle):
+		_duty.set_value_no_signal(_mission.controls.duty_cycle)
+		_duty_label.text = "Camera on %d %% of the time" % roundi(_duty.value * 100.0)
+	_radio.set_pressed_no_signal(_mission.controls.radio_enabled)
+
+
+func _refresh_health() -> void:
+	var s := _mission.state
+	var lines: Array[String] = []
+	if s.radio_hung:
+		lines.append("Radio: LOCKED UP, sends nothing")
+	if s.instrument_hung:
+		lines.append("Camera: FROZEN, takes no pictures")
+	if s.battery_health < 1.0:
+		lines.append("Battery: holds %d %% of its design capacity" % roundi(s.battery_health * 100.0))
+	if s.solar_health < 1.0:
+		lines.append("Solar array: %d %% of its design output" % roundi(s.solar_health * 100.0))
+	_faults.text = "All systems nominal" if lines.is_empty() else "\n".join(lines)
+	_faults.add_theme_color_override("font_color", UiStyle.GOOD if lines.is_empty() else UiStyle.WARN)
+	_cycle_radio.disabled = s.done or _mission.is_cycling(Controls.RADIO_ENABLED)
+	_cycle_camera.disabled = s.done or _mission.is_cycling(Controls.DUTY_CYCLE) or _mission.controls.duty_cycle <= 0.0
+	# the fix is the obvious next click, so it lights up while something is hung
+	_cycle_radio.modulate = UiStyle.WARN if s.radio_hung else Color.WHITE
+	_cycle_camera.modulate = UiStyle.WARN if s.instrument_hung else Color.WHITE
 
 
 func _update_forecast() -> void:
@@ -286,6 +347,13 @@ func _log_event(e: Dictionary) -> void:
 	if day != _log_day:
 		_flush_day()
 		_log_day = day
+	match e["kind"]:
+		&"failure":
+			_log_line("%s: FAILURE, %s." % [Explain.mission_time(float(e["t_s"])), Explain.failure_name(e["failure"]).to_lower()], UiStyle.BAD)
+			return
+		&"recovered":
+			_log_line("%s: %s cleared by the power cycle." % [Explain.mission_time(float(e["t_s"])), Explain.failure_name(e["failure"])], UiStyle.GOOD)
+			return
 	var seen: int = _day_counts.get(e["kind"], 0)
 	_day_counts[e["kind"]] = seen + 1
 	if seen > 0:

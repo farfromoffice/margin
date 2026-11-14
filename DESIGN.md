@@ -128,10 +128,25 @@ Battery depletion ends the mission in either mode. With sane thresholds Normal m
 **Invariants** (tested every step in debug runs):
 
 - `generated_bits = delivered_bits + discarded_bits + stored_bits`
-- `0 ≤ energy_j ≤ battery_capacity_j`, `0 ≤ stored_bits ≤ storage_capacity_bits`
-- same inputs and same command log -> identical result (no randomness)
+- `0 ≤ energy_j ≤ battery_capacity_j · battery_health`, `0 ≤ stored_bits ≤ storage_capacity_bits`
+- same inputs, same command log and same failure plan -> identical result (no randomness inside the simulator)
 
 `Simulator.run(input, timeline, commands = [])` is a loop over `step()` that applies the logged commands at their step boundaries and never pauses. With no commands it is the uninterrupted mission and gives exactly the results of the pre-operations simulator.
+
+## Live failures
+
+Before launch `FailurePlan.generate(run_seed, duration_s, dt_s, failures.json rows)` draws the plan: 1 to 3 failures, each kind at most once, kind by `weight`, time uniform on a step boundary between 10 % and 90 % of the mission, magnitude uniform in `[magnitude_min, magnitude_max]`. The plan is a list `{t_s, kind, magnitude}` sorted by time. `run_seed` is drawn once per new mission, so flying a redesign meets the same failures at the same times. `GameState.live_failures` switches the draw off.
+
+The simulator only replays the plan. At the start of each step every failure with `t_s ≤ t` strikes, is logged as a `failure` event and fires the `failure` auto-pause:
+
+| Kind | Effect | Ends |
+|---|---|---|
+| `battery_fade` | `battery_health *= 1 − magnitude`; capacity, Safe thresholds and the full charge use `battery_capacity_j · battery_health`; charge above it is cut | never |
+| `solar_loss` | `solar_health *= 1 − magnitude`; generation is `solar_power_w · solar_health · sunlit_s` | never |
+| `radio_hang` | `tx = 0` (idle power only, no downlink) | after one whole step with `radio_enabled = false` |
+| `instrument_hang` | instrument still draws its Normal-mode power, `step_gen = 0` (not counted as missed) | after one whole step with `duty_cycle = 0` or in Safe mode |
+
+A hang that ends logs a `recovered` event at the end of that step. `Mission.power_cycle(control)` is the player's fix: it logs the switch off now and the switch back (radio on, or the previous duty cycle) after the next step, so the command log alone replays it. The no-intervention baseline flies the same plan with no commands, so a hang there lasts to the end. The rates and magnitudes are fictional teaching values; the weights follow the share of power-system and data-handling failures in the CubeSat surveys cited in failures.json.
 
 ## Commands
 
@@ -159,6 +174,7 @@ Checked after every simulation step, never per frame. When one fires, the step t
 | `storage_high` | on | stored data rises to ≥ 80 % of storage | stored data < 60 % of storage |
 | `contact_begin` | on | a contact begins in a Normal-mode step while the radio is off | the radio control is changed |
 | `safe_enter` | off | Safe mode is entered (always logged as an event) | next entry |
+| `failure` | on | a planned failure struck in the step | each kind strikes once |
 
 Two choices here go beyond the brief, and both are teaching values the team can tune:
 
@@ -181,8 +197,10 @@ end_reason: COMPLETED | POWER_LOST, end_t_s
 series (one value per step, PackedFloat64Array / PackedByteArray):
     energy_j, stored_bits, delivered_bits and discarded_bits (cumulative), mode
 totals: as in State
-events: [{t_s, kind: safe_enter | safe_exit | power_lost, energy_j}]
+events: [{t_s, kind: safe_enter | safe_exit | power_lost | failure | recovered, energy_j}]
+        failure and recovered also carry `failure` (the kind), failure carries `magnitude`
 commands: [{t_s, control, value}]
+failures: the plan the run met
 ```
 
 At 30 days that is 43,200 steps per series. The UI downsamples for charts. `RunResult.daily()` folds the series into one `DayState` per day: `energy_min_j`, `energy_end_j`, `stored_bits_end`, `delivered_bits` and `discarded_bits` of that day, `safe_time_s`, `mode_end`, the day's events.
@@ -223,7 +241,8 @@ sim/controls.gd          Controls (duty_cycle, radio_enabled)
 sim/sim_state.gd         SimState
 sim/mission_clock.gd     MissionClock: real time -> step count
 sim/auto_pause.gd        AutoPause: triggers, arming
-sim/mission.gd           Mission: state + controls + command log + auto-pause
+sim/mission.gd           Mission: state + controls + command log + auto-pause + power cycle
+sim/failure_plan.gd      FailurePlan.generate(seed, duration_s, dt_s, entries)
 sim/launch_check.gd      LaunchCheck.check(design, scenario, catalog) -> violations
 sim/warnings.gd          Warnings.compute(input, timeline) -> warnings
 sim/types/run_result.gd  RunResult

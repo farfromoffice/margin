@@ -1,0 +1,46 @@
+[
+  {
+    "id": "battery_fade",
+    "name": "Battery cells lose capacity",
+    "explain": "One cell string in the battery degraded. The battery now holds less, so eclipses drain it deeper.",
+    "fix": "Permanent. Use less power: lower the camera time or keep the radio off between passes.",
+    "weight": 3,
+    "magnitude_min": 0.15,
+    "magnitude_max": 0.3,
+    "source": "Power system is the largest share of CubeSat failures (27 %), Bouwmeester, Langer and Gill, Survey on the implementation and reliability of CubeSat electrical power systems, CEAS Space Journal 2016; Langer and Bouwmeester, Reliability of CubeSats, SmallSat 2016 https://digitalcommons.usu.edu/smallsat/2016/TS10AdvTech2/4",
+    "provenance": "fictional",
+    "provenance_fields": { "weight": "approximation" }
+  },
+  {
+    "id": "solar_loss",
+    "name": "Solar string failed",
+    "explain": "One string of solar cells stopped delivering power. Every sunlit minute now charges the battery less.",
+    "fix": "Permanent. Use less power: lower the camera time or keep the radio off between passes.",
+    "weight": 3,
+    "magnitude_min": 0.2,
+    "magnitude_max": 0.3,
+    "source": "Power system is the largest share of CubeSat failures (27 %), Bouwmeester, Langer and Gill, CEAS Space Journal 2016",
+    "provenance": "fictional",
+    "provenance_fields": { "weight": "approximation" }
+  },
+  {
+    "id": "radio_hang",
+    "name": "Radio locked up",
+    "explain": "A radiation hit froze the radio's software. It still draws power but sends nothing.",
+    "fix": "Power-cycle the radio: switch it off for a moment and on again.",
+    "weight": 2,
+    "source": "Subsystem contributions to CubeSat failure, Langer and Bouwmeester, SmallSat 2016 https://digitalcommons.usu.edu/smallsat/2016/TS10AdvTech2/4 ; recovery by power cycle is a teaching assumption",
+    "provenance": "fictional",
+    "provenance_fields": { "weight": "approximation" }
+  },
+  {
+    "id": "instrument_hang",
+    "name": "Camera computer froze",
+    "explain": "A radiation upset froze the camera's computer. It still draws power but takes no pictures.",
+    "fix": "Power-cycle the camera: set its time to 0 % for a moment and back. Safe mode also switches it off.",
+    "weight": 2,
+    "source": "Command and data handling is 15 % of CubeSat failures, Bouwmeester, Langer and Gill, CEAS Space Journal 2016",
+    "provenance": "fictional",
+    "provenance_fields": { "weight": "approximation" }
+  }
+]

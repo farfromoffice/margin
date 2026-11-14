@@ -34,6 +34,11 @@ func _ready() -> void:
 		for f in actual:
 			why.append(["%s: %s" % [Explain.factor(f), Explain.FACTOR_HINTS[f]], UiStyle.TEXT])
 		col.add_child(_card("What happened", why, "satellite"))
+	var failures := Explain.failure_lines(r)
+	if not failures.is_empty():
+		var lines: Array = failures.map(func(l): return [l, UiStyle.WARN])
+		lines.append(["The comparison below flies the same failures with nobody at the controls.", UiStyle.MUTED])
+		col.add_child(_card("Failures in flight", lines, "chip"))
 	if GameState.baseline_result:
 		col.add_child(_card("Design vs. operations", _operations_lines(r, GameState.baseline_result, s), "camera"))
 	if not GameState.last_warnings.is_empty():

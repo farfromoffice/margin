@@ -179,6 +179,7 @@ static func mission_time(t_s: float) -> String:
 
 
 const PAUSE_NAMES := {
+	AutoPause.FAILURE: "Something broke",
 	AutoPause.LOW_BATTERY: "Battery low",
 	AutoPause.STORAGE_HIGH: "Memory 80 % full",
 	AutoPause.CONTACT_BEGIN: "Pass begins, radio off",
@@ -186,6 +187,7 @@ const PAUSE_NAMES := {
 }
 
 const PAUSE_REASONS := {
+	AutoPause.FAILURE: "",
 	AutoPause.LOW_BATTERY: "The battery is getting low. Safe mode will switch the camera off soon unless the camera or the radio uses less.",
 	AutoPause.STORAGE_HIGH: "The memory is 80 % full. When it is full, new pictures are thrown away.",
 	AutoPause.CONTACT_BEGIN: "A ground station is in view and the radio is off. Switch it on to send pictures home during this pass.",
@@ -194,7 +196,49 @@ const PAUSE_REASONS := {
 
 
 static func pause_reasons(fired: Array[StringName]) -> String:
-	return " ".join(fired.map(func(k): return PAUSE_REASONS.get(k, String(k))))
+	return " ".join(fired.map(func(k): return PAUSE_REASONS.get(k, String(k)))).strip_edges()
+
+
+## Short name of a failure kind from failures.json, or the raw id if it is gone.
+static func failure_name(kind: StringName) -> String:
+	return str(Catalog.get_entry("failures", kind).get("name", kind))
+
+
+## What broke and what the player can do about it, for the pause banner.
+static func failure_alert(kind: StringName) -> String:
+	var e := Catalog.get_entry("failures", kind)
+	return "%s. %s %s" % [failure_name(kind), e.get("explain", ""), e.get("fix", "")]
+
+
+## Report lines for every failure of a run: when it struck, what it did, and
+## for hangs how long they lasted.
+static func failure_lines(r: RunResult) -> Array[String]:
+	var out: Array[String] = []
+	for e in r.events:
+		if e["kind"] != &"failure":
+			continue
+		var kind: StringName = e["failure"]
+		var line := "%s: %s." % [mission_time(float(e["t_s"])), failure_name(kind)]
+		match kind:
+			&"battery_fade":
+				line += " The battery lost %d %% of what it could hold." % roundi(float(e["magnitude"]) * 100.0)
+			&"solar_loss":
+				line += " The solar array lost %d %% of its output." % roundi(float(e["magnitude"]) * 100.0)
+			_:
+				var fixed := _recovery_t(r, kind, float(e["t_s"]))
+				if fixed < 0.0:
+					line += " Never fixed, %s without it." % days(r.end_t_s - float(e["t_s"]))
+				else:
+					line += " Fixed after %s." % days(fixed - float(e["t_s"]))
+		out.append(line)
+	return out
+
+
+static func _recovery_t(r: RunResult, kind: StringName, after_s: float) -> float:
+	for e in r.events:
+		if e["kind"] == &"recovered" and e["failure"] == kind and float(e["t_s"]) >= after_s:
+			return float(e["t_s"])
+	return -1.0
 
 
 static func command(c: Dictionary) -> String:

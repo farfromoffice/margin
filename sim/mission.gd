@@ -6,13 +6,46 @@ var timeline: OrbitTimeline
 var controls: Controls
 var state: SimState
 var auto_pause := AutoPause.new()
+var failures: Array[Dictionary] = []
+## controls switched off by power_cycle(), switched back on after one step
+var _cycling: Array[StringName] = []
+var _cycle_back := {}
 
 
-func _init(p_input: SimInput, p_timeline: OrbitTimeline) -> void:
+func _init(p_input: SimInput, p_timeline: OrbitTimeline, p_failures: Array[Dictionary] = []) -> void:
 	input = p_input
 	timeline = p_timeline
+	failures = p_failures
 	controls = Controls.initial(input)
-	state = Simulator.start(input)
+	state = Simulator.start(input, failures)
+
+
+## power_cycle switches the radio or the camera off for exactly one step and back
+## on, which clears a hang. Both switches land in the command log like any other
+## change, so the replay sees the same thing. The camera comes back at the duty
+## cycle it had.
+func power_cycle(control: StringName) -> void:
+	if state.done or control in _cycling:
+		return
+	var back: Variant = controls.value_of(control)
+	match control:
+		Controls.RADIO_ENABLED:
+			# an off radio is already cycling, it just comes back on after this step
+			back = true
+		Controls.DUTY_CYCLE:
+			if float(back) <= 0.0:
+				return
+		_:
+			push_error("Mission: cannot power-cycle %s" % control)
+			return
+	set_control(control, false if control == Controls.RADIO_ENABLED else 0.0)
+	_cycle_back[control] = back
+	_cycling.append(control)
+
+
+## True while a power cycle of this control is under way.
+func is_cycling(control: StringName) -> bool:
+	return control in _cycling
 
 
 ## set_control changes a control between two steps and logs it with the current
@@ -41,6 +74,7 @@ func advance(max_steps: int) -> Array[StringName]:
 			break
 		var mode_before := state.mode
 		Simulator.step(state, input, controls, timeline)
+		_finish_cycles()
 		var fired := auto_pause.check(state, input, controls, mode_before)
 		if not fired.is_empty():
 			return fired
@@ -51,9 +85,19 @@ func advance(max_steps: int) -> Array[StringName]:
 func finish() -> void:
 	while not state.done:
 		Simulator.step(state, input, controls, timeline)
+		_finish_cycles()
 
 
-## baseline runs the same SimInput again from the start with the launch settings
-## and no player changes. The report compares it with the flown mission.
+## baseline runs the same SimInput again from the start with the launch settings,
+## the same failures and no player changes, so nobody fixes anything. The report compares it with the flown mission.
 func baseline() -> RunResult:
-	return Simulator.run(input, timeline.rewound())
+	return Simulator.run(input, timeline.rewound(), [], failures)
+
+
+func _finish_cycles() -> void:
+	if _cycling.is_empty() or state.done:
+		return
+	for control in _cycling:
+		set_control(control, _cycle_back[control])
+	_cycling.clear()
+	_cycle_back.clear()

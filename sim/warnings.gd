@@ -25,9 +25,14 @@ static func compute(input: SimInput, timeline: OrbitTimeline) -> Array[Dictionar
 
 
 static func forecast(input: SimInput, controls: Controls, timeline: OrbitTimeline, s: SimState) -> Dictionary:
-	var net := orbit_energy_j(input, timeline, controls)
-	var made := generated_bits_per_day(input, controls)
-	var sendable := deliverable_bits_per_day(input, timeline, controls)
+	input = _as_damaged(input, s)
+	var c := Controls.new()
+	c.duty_cycle = controls.duty_cycle
+	# a hung radio idles exactly like one switched off, so that is how it's counted
+	c.radio_enabled = controls.radio_enabled and not s.radio_hung
+	var net := orbit_energy_j(input, timeline, c)
+	var made := 0.0 if s.instrument_hung else generated_bits_per_day(input, c)
+	var sendable := deliverable_bits_per_day(input, timeline, c)
 	var storage_full_in_s := INF
 	if made > sendable:
 		storage_full_in_s = maxf(input.storage_capacity_bits - s.stored_bits, 0.0) / (made - sendable) * 86400.0
@@ -43,6 +48,19 @@ static func forecast(input: SimInput, controls: Controls, timeline: OrbitTimelin
 		"storage_full_in_s": storage_full_in_s,
 		"safe_mode_in_s": safe_mode_in_s,
 	}
+
+
+## Copy of input with the solar and battery numbers the failures so far left.
+static func _as_damaged(input: SimInput, s: SimState) -> SimInput:
+	if is_equal_approx(s.solar_health, 1.0) and is_equal_approx(s.battery_health, 1.0):
+		return input
+	var d := SimInput.new()
+	for p in input.get_property_list():
+		if p["usage"] & PROPERTY_USAGE_SCRIPT_VARIABLE:
+			d.set(p["name"], input.get(p["name"]))
+	d.solar_power_w *= s.solar_health
+	d.battery_capacity_j *= s.battery_health
+	return d
 
 
 ## orbit_energy_j returns the Normal mode energy gained minus the energy spent over

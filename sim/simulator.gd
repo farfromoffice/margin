@@ -6,9 +6,12 @@ extends RefCounted
 const INVARIANT_TOLERANCE := 1e-9
 
 
-static func start(input: SimInput) -> SimState:
+## failures is a FailurePlan, empty for a run where nothing breaks.
+static func start(input: SimInput, failures: Array[Dictionary] = []) -> SimState:
 	var s := SimState.new()
 	var r := s.result
+	s.failures = failures.duplicate(true)
+	r.failures = failures.duplicate(true)
 	r.dt_s = input.dt_s
 	s.total_steps = int(ceil(input.duration_s / input.dt_s)) if input.dt_s > 0.0 else 0
 	r.energy_j.resize(s.total_steps)
@@ -31,11 +34,16 @@ static func step(s: SimState, input: SimInput, controls: Controls, timeline: Orb
 	var i := s.step
 	var t := s.t_s
 	var step_dt := minf(dt, input.duration_s - t)
-	var capacity := input.battery_capacity_j
+	_strike_failures(s, input, t)
+	var capacity := s.capacity_j(input)
 	timeline.advance(t, step_dt)
 	s.contact_starts = timeline.contact_starts
 	# A radio that is switched off does not transmit and does not draw transmit power.
-	var tx := timeline.contact_s if controls.radio_enabled else 0.0
+	# A hung one idles too, it just doesn't know it should be talking.
+	var tx := timeline.contact_s if controls.radio_enabled and not s.radio_hung else 0.0
+	# a power cycle needs one whole step with the part off, decided before the step runs
+	var radio_cycled := s.radio_hung and not controls.radio_enabled
+	var instrument_cycled := s.instrument_hung and (controls.duty_cycle <= 0.0 or s.mode == RunResult.Mode.SAFE)
 
 	# 1. loads by the mode this step runs in
 	var load_j: float
@@ -46,7 +54,7 @@ static func step(s: SimState, input: SimInput, controls: Controls, timeline: Orb
 		load_j = (input.bus_safe_power_w + input.radio_idle_power_w) * step_dt
 
 	# 2. battery, surplus past full is simply lost
-	var e := s.energy_j + input.solar_power_w * timeline.sunlit_s - load_j
+	var e := s.energy_j + input.solar_power_w * s.solar_health * timeline.sunlit_s - load_j
 	if e < 0.0:
 		s.energy_j = 0.0
 		r.end_reason = RunResult.EndReason.POWER_LOST
@@ -67,6 +75,9 @@ static func step(s: SimState, input: SimInput, controls: Controls, timeline: Orb
 
 	# 4 to 6 use the mode the step ran in, the switch below lands next step
 	var step_gen := input.instrument_rate_bps * controls.duty_cycle * dt * step_dt / dt
+	if s.instrument_hung:
+		# draws power like it is working, makes nothing. Not "missed": that is Safe mode's blame
+		step_gen = 0.0
 	if s.mode == RunResult.Mode.NORMAL:
 		s.stored_bits += step_gen
 		r.generated_bits_total += step_gen
@@ -76,6 +87,12 @@ static func step(s: SimState, input: SimInput, controls: Controls, timeline: Orb
 	else:
 		r.missed_bits_total += step_gen
 		r.safe_time_s += step_dt
+	if radio_cycled:
+		s.radio_hung = false
+		r.events.append({"t_s": t + step_dt, "kind": &"recovered", "failure": &"radio_hang", "energy_j": s.energy_j})
+	if instrument_cycled:
+		s.instrument_hung = false
+		r.events.append({"t_s": t + step_dt, "kind": &"recovered", "failure": &"instrument_hang", "energy_j": s.energy_j})
 	if s.stored_bits > input.storage_capacity_bits:
 		# newest data gets dropped, bookkeeping only
 		r.discarded_bits_total += s.stored_bits - input.storage_capacity_bits
@@ -100,8 +117,8 @@ static func step(s: SimState, input: SimInput, controls: Controls, timeline: Orb
 		_finish(s, input)
 
 
-static func run(input: SimInput, timeline: OrbitTimeline, commands: Array[Dictionary] = []) -> RunResult:
-	var s := start(input)
+static func run(input: SimInput, timeline: OrbitTimeline, commands: Array[Dictionary] = [], failures: Array[Dictionary] = []) -> RunResult:
+	var s := start(input, failures)
 	var controls := Controls.initial(input)
 	var next := 0
 	while not s.done:
@@ -111,6 +128,31 @@ static func run(input: SimInput, timeline: OrbitTimeline, commands: Array[Dictio
 		step(s, input, controls, timeline)
 	s.result.commands = commands.duplicate(true)
 	return s.result
+
+
+## Applies every planned failure due at the start of this step. Fades stack on
+## what is left, a second hit on a hung part changes nothing.
+static func _strike_failures(s: SimState, input: SimInput, t: float) -> void:
+	s.failures_started.clear()
+	while s.next_failure < s.failures.size() and float(s.failures[s.next_failure]["t_s"]) <= t:
+		var f: Dictionary = s.failures[s.next_failure]
+		s.next_failure += 1
+		var m := clampf(float(f.get("magnitude", 0.0)), 0.0, 1.0)
+		match f["kind"]:
+			&"battery_fade":
+				s.battery_health *= 1.0 - m
+				s.energy_j = minf(s.energy_j, s.capacity_j(input))
+			&"solar_loss":
+				s.solar_health *= 1.0 - m
+			&"radio_hang":
+				s.radio_hung = true
+			&"instrument_hang":
+				s.instrument_hung = true
+			_:
+				push_error("Simulator: unknown failure %s" % f["kind"])
+				continue
+		s.failures_started.append(f["kind"])
+		s.result.events.append({"t_s": t, "kind": &"failure", "failure": f["kind"], "magnitude": m, "energy_j": s.energy_j})
 
 
 static func _finish(s: SimState, input: SimInput) -> void:
@@ -134,5 +176,5 @@ static func _invariants_hold(s: SimState, input: SimInput) -> bool:
 	var accounted := r.delivered_bits_total + r.discarded_bits_total + s.stored_bits
 	var slack := INVARIANT_TOLERANCE * maxf(1.0, r.generated_bits_total)
 	return absf(r.generated_bits_total - accounted) <= slack \
-			and s.energy_j >= 0.0 and s.energy_j <= input.battery_capacity_j \
+			and s.energy_j >= 0.0 and s.energy_j <= s.capacity_j(input) \
 			and s.stored_bits >= 0.0 and s.stored_bits <= input.storage_capacity_bits

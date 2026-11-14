@@ -44,7 +44,7 @@ Status: ✅ done, 🟡 in progress, ❌ not started, ⏭ out of scope for the ha
 | Brief item | Margin feature | Status |
 |---|---|---|
 | Multiple scenarios | Wildfire Watch, Crop Scout, Lunar Ice Mapper, Red Relay | ❌ |
-| Random events | Solar storm, battery fade, ground station outage, launch slip, budget cut | ❌ |
+| Random events | Live failures in flight: battery fade, solar string, radio and camera hangs. Solar storm, station outage, launch slip, budget cut still open | 🟡 |
 | Difficulty levels | Simple and advanced component catalogs, scenario difficulty multiplier | ❌ |
 | Realistic or simplified spacecraft models | Simplified models backed by CubeSat 101 numbers | 🟡 |
 | Interactive spacecraft visualization | Spacecraft preview on the Design screen | ✅ |

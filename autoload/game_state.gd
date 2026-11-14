@@ -20,6 +20,9 @@ var last_result: RunResult
 var previous_result: RunResult
 ## The mission flown on the operations screen. It is null before launch.
 var mission: Mission
+## Whether start_mission draws a failure plan. The same seed gives the same
+## failures, so a redesign meets them again at the same times.
+var live_failures := true
 ## The design of last_result flown with its launch settings and no player changes.
 var baseline_result: RunResult
 
@@ -63,7 +66,10 @@ func start_mission() -> Mission:
 	# The mission can use the same timeline.
 	last_warnings = Warnings.compute(input, timeline)
 	last_input = input
-	mission = Mission.new(input, timeline)
+	var failures: Array[Dictionary] = []
+	if live_failures:
+		failures = FailurePlan.generate(run_seed, input.duration_s, input.dt_s, Catalog.all("failures"))
+	mission = Mission.new(input, timeline, failures)
 	return mission
 
 

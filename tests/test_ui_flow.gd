@@ -6,6 +6,9 @@ var app: Control
 
 
 func before_each() -> void:
+	# random failures would make the pause tests flaky, the ones that want a
+	# failure plant their own
+	GameState.live_failures = false
 	app = load("res://scenes/app.tscn").instantiate()
 	add_child_autofree(app)
 	await wait_process_frames(1)
@@ -179,3 +182,35 @@ func test_operations_screen_fits_the_base_window_with_a_pause_banner() -> void:
 	var needed := page.get_combined_minimum_size()
 	assert_lte(needed.x, 1280.0, "width at 1280x720")
 	assert_lte(needed.y, 720.0, "height at 1280x720")
+
+
+func test_power_cycle_button_clears_a_hung_radio() -> void:
+	_reference_design()
+	GameState.start_mission()
+	var m := GameState.mission
+	GameState.mission = Mission.new(m.input, m.timeline, [{"t_s": 0.0, "kind": &"radio_hang", "magnitude": 0.0}])
+	var run: Control = await _go(&"run")
+	run._set_speed(0)
+	run._mission.advance(5)
+	run._refresh()
+	assert_string_contains(run._faults.text, "LOCKED UP")
+	run._cycle_radio.pressed.emit()
+	assert_false(run._radio.button_pressed, "radio off for the cycle")
+	assert_true(run._cycle_radio.disabled)
+	run._mission.advance(1)
+	run._refresh()
+	assert_true(run._radio.button_pressed)
+	assert_string_contains(run._faults.text, "nominal")
+
+
+func test_report_lists_the_failures() -> void:
+	_reference_design()
+	GameState.start_mission()
+	var m := GameState.mission
+	GameState.mission = Mission.new(m.input, m.timeline, [{"t_s": 600.0, "kind": &"solar_loss", "magnitude": 0.25}])
+	var run: Control = await _go(&"run")
+	run._finish_now()
+	var report: Control = await _go(&"report")
+	var texts := report.find_children("*", "Label", true, false).map(func(l): return l.text)
+	assert_true(texts.any(func(t): return "Solar string failed" in t))
+
