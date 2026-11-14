@@ -4,8 +4,8 @@
     "name": "Example launcher",
     "cost_kusd": 0.0,
     "capacity_kg": { "leo_400": 0.0 },
-    "reliability": 1.0,
     "source": "",
+    "provenance": "fictional",
     "placeholder": true
   }
 ]

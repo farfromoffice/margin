@@ -6,31 +6,41 @@ Hackathon: 14 to 15 November 2026, 48 hours. Hours count from kickoff.
 
 - [x] Repo and Godot project
 - [x] PROBLEM, RESEARCH, ROADMAP, README skeletons
-- [ ] Folder layout, autoloads (`GameState`, `EventBus`)
-- [ ] Data contracts: `Design`, `Scenario`, `DayState`, JSON schemas
-- [ ] GUT test runner
-- [ ] Empty web export uploaded to itch.io
+- [x] Folder layout, autoloads (`Catalog`, `GameState`, `EventBus`)
+- [x] First data contracts: `MissionDesign`, `Scenario`, `DayState`
+- [x] GUT test runner
+- [ ] Empty web export uploaded to itch.io, opened in Chrome and Firefox
 
-## Phase 1 · Core (3 to 14 h)
+## Phase 1 · Core simulation (3 to 14 h)
 
-- [ ] `sim/orbit.gd`, `sim/power.gd`, `sim/link.gd` with tests
-- [ ] `sim/propulsion.gd`, `sim/budget.gd`, `sim/lifetime.gd`, `sim/events.gd` with tests
-- [ ] `sim/simulator.gd`, `sim/scoring.gd`
-- [ ] Component, launcher, orbit catalogs in `data/`
-- [ ] Design screen and margin panel on placeholder data
+- [ ] Data schema: unit suffixes, `provenance` labels, `safe_power_w`; `Catalog` converts to SI at load
+- [ ] Orbit table for 2–3 orbits: eclipse fraction and contact windows from GMAT, assumptions in RESEARCH.md
+- [ ] Orbit timeline: period from `T = 2π√(a³/μ)`, eclipse and contact intervals, per-step `{sunlit, contact}`
+- [ ] 60 s simulation loop, duration from the scenario
+- [ ] Power and operating modes: Normal / Safe with enter and exit thresholds, mission loss at zero charge in Safe
+- [ ] Data chain: generation, storage, downlink, overflow discard; `generated = delivered + discarded + stored` tested
+- [ ] Launch check: mass, orbit reachability, budget
+- [ ] Design-time warnings: energy per orbit, data generated vs deliverable per day
+- [ ] `DayState` updated: operating mode, safe-mode time, data totals, mode events, one end reason
+- [ ] Wildfire Watch catalog: at most 3 options per category, every value labelled; cost model still open
 
 ## Phase 2 · First playable (14 to 24 h)
 
-- [ ] Wildfire Watch playable end to end, lobby to report
+- [ ] Briefing, design screen, launch check feedback
+- [ ] Prediction screen: one or more expected limiting factors
+- [ ] Mission run view: battery, storage, downlink over time
+- [ ] Report: objective result, delivered and lost data with causes, prediction vs actual
+- [ ] Redesign and run again
 - [ ] First playtest, notes in this file
 
-## Phase 3 · Content and collaboration (24 to 36 h)
+## Phase 3 · Optional features (24 to 36 h)
 
-- [ ] Crop Scout, Lunar Ice Mapper, Red Relay, Sandbox
-- [ ] Random events with role decisions
-- [ ] Review Board
-- [ ] Trade Study, leaderboard, closest real mission card
+Only after Phase 2 works end to end.
+
 - [ ] Balance pass, validation table in RESEARCH.md
+- [ ] Design comparison (two runs side by side)
+- [ ] Optional: local role-based play at one screen
+- [ ] Optional: further scenarios, sandbox
 
 ## Phase 4 · Freeze (36 to 42 h)
 
@@ -46,6 +56,7 @@ Hackathon: 14 to 15 November 2026, 48 hours. Hours count from kickoff.
 
 ## After the hackathon
 
-- Online multiplayer over WebSocket
+- Networked multiplayer (needs session management, state sync, conflict handling)
+- Random events with sourced probabilities
+- Leaderboard, competitive team mode, closest real mission card
 - 3D spacecraft view
-- Competitive team mode

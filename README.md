@@ -2,17 +2,17 @@
 
 **Every gram counts.**
 
-Margin is a space mission design game made for the NASA Space Apps Challenge 2026 ([Space Mission Design Game](https://www.spaceappschallenge.org/2026/challenges/space-mission-design-game/)). Alone or with up to three friends, you take a mission from an idea to launch and operations. Every choice eats into a margin: mass, power, budget, data, link. Let one go negative and the mission pays for it in orbit.
+Margin is a space mission design game made for the NASA Space Apps Challenge 2026 ([Space Mission Design Game](https://www.spaceappschallenge.org/2026/challenges/space-mission-design-game/)). You design a small Earth-observation mission, predict what will limit it, run it and find out why.
 
 Play in the browser: _link coming soon_
 
 ## Playing
 
-1. Pick a scenario and read the briefing.
-2. Set your requirements.
-3. Design the mission across four tabs: Launch, Spacecraft, Ground, Science.
-4. Every role signs off at the Review Board.
-5. Launch, watch the mission run, read the report, try again.
+1. Read the mission briefing and its objective.
+2. Choose an instrument, solar array, battery, radio, ground stations, orbit and launcher. The game blocks launch if the mass, orbit or budget does not fit.
+3. Predict which constraints will limit the mission.
+4. Run the mission and watch power, storage and downlink.
+5. Read the report, change the design, try again.
 
 ## Development
 
@@ -30,6 +30,7 @@ Project docs:
 - [PROBLEM.md](PROBLEM.md): the challenge and how each item maps to a feature
 - [RESEARCH.md](RESEARCH.md): models, data sources, validation
 - [ROADMAP.md](ROADMAP.md): plan and progress
+- [data/README.md](data/README.md): data schema, units and provenance rules
 
 ## Team
 
