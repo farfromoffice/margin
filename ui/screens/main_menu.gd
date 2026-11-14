@@ -72,6 +72,19 @@ func _ready() -> void:
 	footer.position += Vector2(28, -36)
 	add_child(footer)
 
+	var studio := TextureRect.new()
+	studio.name = "StudioLogo"
+	studio.texture = preload("res://ui/brand/logo_small.png")
+	studio.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	studio.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
+	studio.modulate.a = 0.8
+	studio.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(studio)
+	studio.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	# sits on the same line as the footer on the left
+	studio.size = Vector2(130, 25)
+	studio.position += Vector2(-130 - 28, -25 - 30)
+
 
 func _style_button(b: Button, text: String, icon_name: String, font_size: int) -> void:
 	b.text = text
