@@ -1,9 +1,9 @@
 class_name Warnings
 extends RefCounted
-## Back of the envelope checks from orbit and pass averages, all in Normal mode.
-## Before launch they warn (never block); in flight forecast() estimates the
-## rest of the mission under the current controls. Each warning is
-## {kind, value, limit, unit}.
+## Warnings estimates power and data from orbit and pass averages in Normal mode.
+## compute lists the problems of a design before launch and never blocks it.
+## forecast estimates the rest of a running mission with the current controls.
+## Each warning is {kind, value, limit, unit}.
 
 
 static func compute(input: SimInput, timeline: OrbitTimeline) -> Array[Dictionary]:
@@ -45,9 +45,9 @@ static func forecast(input: SimInput, controls: Controls, timeline: OrbitTimelin
 	}
 
 
-## Normal mode energy gained minus spent over one average orbit. Negative means
-## the battery drains a little more every orbit. controls default to the launch
-## settings.
+## orbit_energy_j returns the Normal mode energy gained minus the energy spent over
+## one average orbit. A negative value means the battery drains a little more every
+## orbit. Without controls it uses the launch settings.
 static func orbit_energy_j(input: SimInput, timeline: OrbitTimeline, controls: Controls = null) -> float:
 	var c := controls if controls else Controls.initial(input)
 	var period := timeline.period_s

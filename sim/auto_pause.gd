@@ -1,9 +1,8 @@
 class_name AutoPause
 extends RefCounted
-## Decides after each simulation step whether to stop the clock so the player
-## can act. Triggers fire on a crossing and stay quiet until they re-arm.
-## A condition that stays true doesn't pause again.
-## Levels and reasons in DESIGN.md ("Auto-pause").
+## AutoPause checks the state after each simulation step and decides whether to
+## stop the clock for the player. A trigger fires when a value crosses its level
+## and stays quiet until it re-arms. DESIGN.md lists the levels and the reasons.
 
 const LOW_BATTERY := &"low_battery"
 const STORAGE_HIGH := &"storage_high"
@@ -11,18 +10,18 @@ const CONTACT_BEGIN := &"contact_begin"
 const SAFE_ENTER := &"safe_enter"
 const TRIGGERS: Array[StringName] = [LOW_BATTERY, STORAGE_HIGH, CONTACT_BEGIN, SAFE_ENTER]
 
-## the low battery pause sits this far above Safe mode entry while the
-## controls can still keep the spacecraft out of it
+## The low battery pause fires this far above Safe mode entry, while the controls
+## can still keep the spacecraft out of Safe mode.
 const LOW_BATTERY_MARGIN := 0.10
-## a weak power design cycles through Safe mode several times a day; without a
-## cooldown every recharge would re-arm the pause (226 stops in one test mission)
+## A weak power design enters Safe mode several times a day. Without this cooldown
+## every recharge re-arms the pause. One test mission paused 226 times.
 const LOW_BATTERY_COOLDOWN_S := 86400.0
 const STORAGE_PAUSE_FRACTION := 0.8
 const STORAGE_REARM_FRACTION := 0.6
 
 var enabled := {LOW_BATTERY: true, STORAGE_HIGH: true, CONTACT_BEGIN: true, SAFE_ENTER: false}
-## arming is tracked even for disabled triggers, switching one on mid-flight
-## doesn't fire on a condition that has been true for days
+## Arming is tracked for disabled triggers too. Turning a trigger on in flight does
+## not fire it for a condition that has been true for days.
 var _armed := {LOW_BATTERY: true, STORAGE_HIGH: true, CONTACT_BEGIN: true}
 var _low_battery_fired_t := -INF
 
@@ -31,8 +30,9 @@ static func low_battery_fraction(input: SimInput) -> float:
 	return minf(input.safe_enter_fraction + LOW_BATTERY_MARGIN, input.safe_exit_fraction)
 
 
-## Call after every step with the mode the step ran in. Returns the enabled
-## triggers that fired, empty if none.
+## check compares the state after a step with each trigger level and returns the
+## enabled triggers that fired. mode_before is the mode the step ran in. The
+## result is empty when nothing fired.
 func check(s: SimState, input: SimInput, controls: Controls, mode_before: int) -> Array[StringName]:
 	var fired: Array[StringName] = []
 	var capacity := input.battery_capacity_j
@@ -56,8 +56,8 @@ func check(s: SimState, input: SimInput, controls: Controls, mode_before: int) -
 	if mode_before == RunResult.Mode.NORMAL and s.mode == RunResult.Mode.SAFE:
 		fired.append(SAFE_ENTER)
 
-	# with the radio on, transmitting already is the decision; only a pass the
-	# radio would let go by is worth a stop
+	# With the radio on the spacecraft transmits anyway. Only a pass the radio would
+	# miss needs a decision.
 	if _armed[CONTACT_BEGIN] and s.contact_starts > 0 and mode_before == RunResult.Mode.NORMAL \
 			and not controls.radio_enabled:
 		_armed[CONTACT_BEGIN] = false
@@ -66,6 +66,7 @@ func check(s: SimState, input: SimInput, controls: Controls, mode_before: int) -
 	return fired.filter(func(t): return enabled[t])
 
 
-## The radio control changed; the next pass with the radio off may pause again.
+## rearm_contact lets the next pass with the radio off pause again. Mission calls it
+## when the radio control changes.
 func rearm_contact() -> void:
 	_armed[CONTACT_BEGIN] = true

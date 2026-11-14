@@ -18,7 +18,7 @@
       "budget"
     ],
     "objectives": {
-      "delivered_mb": 20000
+      "delivered_mb": 100000
     },
     "sandbox": false
   },

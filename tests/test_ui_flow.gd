@@ -71,8 +71,10 @@ func _launch() -> Control:
 func test_operations_clock_runs_and_auto_pauses_on_a_pass_with_the_radio_off() -> void:
 	var run: Control = await _launch()
 	var m: Mission = GameState.mission
-	# the screen also ticks on the frames GUT waited through; pausing and
-	# resuming clears any part step so the next second is measured exactly
+	var battery: LineChart = run._charts[0]
+	assert_eq(battery.threshold, m.input.safe_enter_fraction * m.input.battery_capacity_j, "Safe mode line on the battery chart")
+	# The screen also ticks on the frames GUT waited through. Pausing and resuming
+	# clears any partial step and the next second is measured exactly.
 	run._set_speed(0)
 	run._set_speed(1)
 	var before := m.state.step
@@ -81,6 +83,8 @@ func test_operations_clock_runs_and_auto_pauses_on_a_pass_with_the_radio_off() -
 	run._radio.button_pressed = false
 	run._process(6.0)
 	assert_true(run._clock.paused, "the next pass stops the clock")
+	var pressed: Array = run._speed_buttons.keys().filter(func(k): return run._speed_buttons[k].button_pressed)
+	assert_eq(pressed, [0], "only Pause shows as selected")
 	assert_true(run._banner.get_parent().visible)
 	assert_gt(m.state.contact_starts, 0)
 	var at := m.state.step
@@ -152,3 +156,16 @@ func test_expanding_the_3d_view_hides_the_side_panels() -> void:
 	design._preview.expand_toggled.emit(false)
 	for p in design._side_panels:
 		assert_true(p.visible)
+
+
+func test_operations_screen_fits_the_base_window_with_a_pause_banner() -> void:
+	var run: Control = await _launch()
+	run._set_speed(0)
+	var every_reason: Array[StringName] = AutoPause.TRIGGERS.duplicate()
+	run._banner.text = "Paused, Day 30, 23:59. " + Explain.pause_reasons(every_reason)
+	run._banner.get_parent().visible = true
+	await wait_process_frames(2)
+	var page: Control = run.get_child(0)
+	var needed := page.get_combined_minimum_size()
+	assert_lte(needed.x, 1280.0, "width at 1280x720")
+	assert_lte(needed.y, 720.0, "height at 1280x720")

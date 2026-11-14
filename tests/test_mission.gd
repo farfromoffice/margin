@@ -23,7 +23,7 @@ func _make_input(days := 2.0) -> SimInput:
 	return s
 
 
-## one 8 minute pass per 95 minute orbit
+## _timeline builds an orbit with one 8 minute pass per 95 minute orbit.
 func _timeline(input: SimInput) -> OrbitTimeline:
 	var orbit := {"altitude_m": 550000.0, "eclipse_fraction": 0.36, "reference_duration_s": 5700.0, "contacts_s": {"gs": [[600.0, 1080.0]]}}
 	return OrbitTimeline.build(orbit, [&"gs"], input.duration_s)
@@ -174,7 +174,7 @@ func test_low_battery_pause_sits_above_safe_mode_and_rearms() -> void:
 		s.energy_j = levels[i] * input.battery_capacity_j
 		fired_at.append(p.check(s, input, c, RunResult.Mode.NORMAL) == ([AutoPause.LOW_BATTERY] as Array[StringName]))
 	assert_eq(fired_at, [false, false, true, false, false, false, true])
-	# in Safe mode the controls can't change the draw, therefore, it doesn't stop there
+	# In Safe mode the controls can't change the power draw. The pause does not fire there.
 	p = AutoPause.new()
 	s.energy_j = 0.35 * input.battery_capacity_j
 	assert_eq(p.check(s, input, c, RunResult.Mode.SAFE), [] as Array[StringName])
@@ -186,7 +186,8 @@ func test_low_battery_pause_waits_a_day_before_rearming() -> void:
 	var s := SimState.new()
 	var c := Controls.initial(input)
 	var fired := 0
-	# Safe mode cycling: drop and recharge every orbit for half a day
+	# The battery drops and recharges every orbit for half a day, like a design that
+	# cycles through Safe mode.
 	for orbit in 8:
 		for f in [0.39, 0.62]:
 			s.t_s = orbit * 5700.0

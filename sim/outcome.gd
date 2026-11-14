@@ -65,7 +65,8 @@ static func _metric(operated: float, baseline: float, floor_value: float) -> Dic
 	return {"operated": operated, "baseline": baseline, "diff": diff, "verdict": verdict}
 
 
-## False when the scenario has no goals: nothing was met.
+## _all_met returns true when every scenario goal was met. A scenario without goals
+## returns false.
 static func _all_met(scenario: Scenario, r: RunResult) -> bool:
 	var rows := objectives(scenario, r)
 	return not rows.is_empty() and rows.all(func(row): return row["met"])

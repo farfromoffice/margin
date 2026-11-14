@@ -1,5 +1,5 @@
 extends GutTest
-## The mission clock turns real time into steps independent of frame rate.
+## Tests that the mission clock turns real time into steps independent of the frame rate.
 
 
 func _steps(clock: MissionClock, deltas: Array) -> int:
@@ -38,7 +38,7 @@ func test_speeds() -> void:
 	for row in [[4, 1.5], [16, 0.375]]:
 		var c := MissionClock.new()
 		c.set_speed(row[0])
-		# 64 fps: both durations are a whole number of frames
+		# At 64 fps both durations are a whole number of frames.
 		assert_eq(_steps(c, _frames(row[1], 64.0)), 1440, "%dx" % row[0])
 
 

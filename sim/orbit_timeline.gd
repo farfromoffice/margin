@@ -18,7 +18,7 @@ var contacts := PackedFloat64Array()
 ## results of the last advance() call
 var sunlit_s := 0.0
 var contact_s := 0.0
-## contact intervals that began inside the step
+## Number of contact intervals that began inside the last step.
 var contact_starts := 0
 
 var _eclipse_cursor := 0
@@ -43,7 +43,8 @@ static func build(orbit: Dictionary, station_ids: Array[StringName], p_duration_
 	return t
 
 
-## Same intervals, cursors back at the start. A second run can walk them.
+## rewound returns a timeline with the same intervals and its cursors at the start.
+## Mission uses it to run the baseline.
 func rewound() -> OrbitTimeline:
 	var t := OrbitTimeline.new()
 	t.period_s = period_s

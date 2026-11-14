@@ -22,7 +22,8 @@ static func start(input: SimInput) -> SimState:
 	return s
 
 
-## Advances one step with the controls as they are now.
+## step advances the state by one step with the current controls and records the
+## step in the result.
 static func step(s: SimState, input: SimInput, controls: Controls, timeline: OrbitTimeline) -> void:
 	assert(not s.done, "Simulator: step after the mission ended")
 	var r := s.result
@@ -33,7 +34,7 @@ static func step(s: SimState, input: SimInput, controls: Controls, timeline: Orb
 	var capacity := input.battery_capacity_j
 	timeline.advance(t, step_dt)
 	s.contact_starts = timeline.contact_starts
-	# a radio that is switched off neither transmits nor draws transmit power
+	# A radio that is switched off does not transmit and does not draw transmit power.
 	var tx := timeline.contact_s if controls.radio_enabled else 0.0
 
 	# 1. loads by the mode this step runs in

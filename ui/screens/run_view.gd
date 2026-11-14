@@ -1,11 +1,11 @@
 extends Control
-## Mission operations. The mission flies live on the mission clock; the player
-## can change the camera duty cycle and the radio while it runs, and auto-pause
-## stops the clock when a decision is due. Hardware, orbit and launcher are
-## locked. Rules in DESIGN.md ("Mission clock", "Auto-pause").
+## The operations screen. The mission runs live on the mission clock and the player
+## can change the camera duty cycle and the radio while it runs. Auto pause stops
+## the clock when a decision is due. Hardware, orbit and launcher stay fixed.
+## DESIGN.md describes the clock and the auto pause rules.
 
-## how fast the craft goes round the orbit view, radians per real second.
-## Real orbits would blur at 1x (one every 0.4 s). It turns at a readable pace.
+## Speed of the craft in the orbit view in radians per real second. A real orbit
+## takes 0.4 s at 1x and would blur. This pace stays readable.
 const ORBIT_VIEW_SPIN := 0.9
 
 var _mission: Mission
@@ -69,6 +69,8 @@ func _build_main() -> Control:
 	var battery := _chart("Battery", UiStyle.GOOD, input.battery_capacity_j,
 			func(v: float) -> String: return "%d %%" % roundi(100.0 * v / maxf(input.battery_capacity_j, 1.0)))
 	battery.modes = r.mode
+	battery.threshold = input.safe_enter_fraction * input.battery_capacity_j
+	battery.threshold_label = "Safe mode below %d %%" % roundi(input.safe_enter_fraction * 100.0)
 	_chart("Memory used", UiStyle.WARN, input.storage_capacity_bits,
 			func(v: float) -> String: return "%d %%" % roundi(100.0 * v / maxf(input.storage_capacity_bits, 1.0)))
 	_chart("Data sent home", UiStyle.DATA, 1.0, func(v: float) -> String: return Explain.mb(v))
@@ -77,7 +79,7 @@ func _build_main() -> Control:
 	left.add_child(UiStyle.label("Red bands: Safe mode, the camera was off and the radio only listened.", 14, UiStyle.MUTED))
 	left.add_child(UiStyle.section("Mission log", "flag", 18))
 	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size.y = 120
+	scroll.custom_minimum_size.y = 90
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_log = UiStyle.vbox(4)
 	_log.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -91,11 +93,21 @@ func _build_side() -> Control:
 	side.custom_minimum_size.x = 340
 	_orbit = OrbitView.new()
 	_orbit.auto_spin = false
-	_orbit.custom_minimum_size = Vector2(300, 150)
+	_orbit.custom_minimum_size = Vector2(300, 110)
 	_orbit.eclipse_fraction = _mission.timeline.eclipse_fraction
 	side.add_child(_orbit)
 
-	side.add_child(UiStyle.section("Mission clock", "orbit"))
+	# The controls scroll when the window is small. The orbit view stays on top and
+	# the two buttons stay at the bottom, where the report button is always visible.
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	var body := UiStyle.vbox(10)
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(body)
+	side.add_child(scroll)
+
+	body.add_child(UiStyle.section("Mission clock", "orbit"))
 	var speeds := UiStyle.hbox(6)
 	var group := ButtonGroup.new()
 	for speed in [0] + MissionClock.SPEEDS:
@@ -105,11 +117,11 @@ func _build_side() -> Control:
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_speed_buttons[speed] = b
 		speeds.add_child(b)
-	side.add_child(speeds)
+	body.add_child(speeds)
 
-	side.add_child(UiStyle.section("Operations", "camera"))
+	body.add_child(UiStyle.section("Operations", "camera"))
 	_duty_label = UiStyle.label("", 16)
-	side.add_child(_duty_label)
+	body.add_child(_duty_label)
 	_duty = HSlider.new()
 	_duty.min_value = 0.0
 	_duty.max_value = 1.0
@@ -119,32 +131,33 @@ func _build_side() -> Control:
 		_duty_label.text = "Camera on %d %% of the time" % roundi(v * 100.0)
 		if not _duty_dragging:
 			_set_control(Controls.DUTY_CYCLE, v))
-	# a drag would log every tick it passes; only where it lands is a decision
+	# A drag passes many values on the way. Only the value where it ends is logged.
 	_duty.drag_started.connect(func(): _duty_dragging = true)
 	_duty.drag_ended.connect(func(_changed: bool):
 		_duty_dragging = false
 		_set_control(Controls.DUTY_CYCLE, _duty.value))
 	_duty_label.text = "Camera on %d %% of the time" % roundi(_duty.value * 100.0)
-	side.add_child(_duty)
+	body.add_child(_duty)
 	_radio = CheckButton.new()
 	_radio.text = "Radio sends data during passes"
 	_radio.button_pressed = _mission.controls.radio_enabled
 	_radio.toggled.connect(func(on: bool): _set_control(Controls.RADIO_ENABLED, on))
-	side.add_child(_radio)
+	body.add_child(_radio)
 	_forecast = UiStyle.label("", 15, UiStyle.MUTED, true)
-	side.add_child(_forecast)
+	_forecast.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.add_child(_forecast)
 
-	side.add_child(UiStyle.section("Auto-pause", "flag"))
+	body.add_child(UiStyle.section("Auto-pause", "flag"))
+	var triggers := GridContainer.new()
+	triggers.columns = 2
 	for trigger in AutoPause.TRIGGERS:
 		var cb := CheckBox.new()
 		cb.text = Explain.PAUSE_NAMES[trigger]
 		cb.button_pressed = _mission.auto_pause.enabled[trigger]
 		cb.toggled.connect(func(on: bool): _mission.auto_pause.enabled[trigger] = on)
-		side.add_child(cb)
+		triggers.add_child(cb)
+	body.add_child(triggers)
 
-	var spacer := Control.new()
-	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	side.add_child(spacer)
 	_finish = UiStyle.button("Fly to the end, no more pauses", _finish_now)
 	_report = UiStyle.button("Read the report", func(): EventBus.screen_requested.emit(&"report"))
 	_report.icon = UiStyle.icon("data")
@@ -177,7 +190,9 @@ func _set_speed(speed: int) -> void:
 	if speed > 0:
 		_clock.set_speed(speed)
 		_banner.get_parent().visible = false
-	_speed_buttons[speed].set_pressed_no_signal(true)
+	# set_pressed_no_signal does not release the other buttons of the group.
+	for s in _speed_buttons:
+		_speed_buttons[s].set_pressed_no_signal(s == speed)
 
 
 func _set_control(control: StringName, value: Variant) -> void:
@@ -198,14 +213,15 @@ func _auto_paused(fired: Array[StringName]) -> void:
 	_update_forecast()
 
 
-## Redraws once per frame however many steps ran; never per step.
+## _refresh redraws the charts, labels and log once per frame, however many steps
+## ran in that frame.
 func _refresh() -> void:
 	var s := _mission.state
 	var r := s.result
 	var progress := float(s.step) / maxf(s.total_steps, 1)
 	var series := [r.energy_j, r.stored_bits, r.delivered_bits]
 	for i in _charts.size():
-		# packed arrays are copy on write, so hand the chart the current buffer
+		# Packed arrays are copy on write. The chart gets the current buffer every frame.
 		_charts[i].values = series[i]
 		_charts[i].total_steps = s.total_steps
 		_charts[i].progress = progress
@@ -296,6 +312,9 @@ func _log_line(text: String, color: Color) -> void:
 
 func _chart(title: String, color: Color, max_value: float, format: Callable) -> LineChart:
 	var c := LineChart.new()
+	# Three charts at the default 130 px leave no room for the pause banner at 720 px.
+	# They still grow to fill a larger window.
+	c.custom_minimum_size.y = 100
 	c.title = title
 	c.color = color
 	c.max_value = maxf(max_value, 1.0)

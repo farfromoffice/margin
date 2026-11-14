@@ -1,19 +1,19 @@
 class_name Controls
 extends RefCounted
-## The operational choices that stay open after launch. Everything else lives
-## in SimInput and is locked once the mission flies.
+## Controls holds the choices the player can still change after launch. Everything
+## else is in SimInput and stays fixed during the mission.
 
 const DUTY_CYCLE := &"duty_cycle"
 const RADIO_ENABLED := &"radio_enabled"
 
-## share of each step the instrument is on, 0..1
+## Share of each step the instrument is on, from 0 to 1.
 var duty_cycle := 1.0
-## whether the radio transmits during contacts
+## Whether the radio transmits during contacts.
 var radio_enabled := true
 
 
-## The settings the mission launches with: duty cycle from the design screen,
-## radio on.
+## initial returns the launch settings. The duty cycle comes from the design screen
+## and the radio is on.
 static func initial(input: SimInput) -> Controls:
 	var c := Controls.new()
 	c.duty_cycle = clampf(input.duty_cycle, 0.0, 1.0)
@@ -29,7 +29,8 @@ func value_of(control: StringName) -> Variant:
 	return null
 
 
-## Returns false for an unknown control, which leaves everything unchanged.
+## apply sets one control to a new value. It returns false for an unknown control
+## and leaves the controls unchanged in that case.
 func apply(control: StringName, value: Variant) -> bool:
 	match control:
 		DUTY_CYCLE:

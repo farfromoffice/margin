@@ -18,9 +18,9 @@ var last_warnings: Array[Dictionary] = []
 var last_result: RunResult
 ## the run before last_result, so the report can say whether the redesign helped
 var previous_result: RunResult
-## the mission being flown on the operations screen, null before launch
+## The mission flown on the operations screen. It is null before launch.
 var mission: Mission
-## last_result's design flown with its launch settings and no intervention
+## The design of last_result flown with its launch settings and no player changes.
 var baseline_result: RunResult
 
 
@@ -52,21 +52,23 @@ func scenario() -> Scenario:
 	return Catalog.get_scenario(scenario_id)
 
 
-## Launches the current design: locks its configuration and hands the
-## operations screen a mission to fly. Launch check is the caller's job.
+## start_mission builds the SimInput and the orbit timeline for the current design
+## and returns a Mission for the operations screen to fly. The caller runs the
+## launch check before.
 func start_mission() -> Mission:
 	var input := SimInput.from_design(design, scenario(), Catalog)
 	var orbit := Catalog.get_entry("orbits", design.orbit_id)
 	var timeline := OrbitTimeline.build(orbit, design.ground_station_ids, input.duration_s)
-	# warnings read the timeline's averages only, they leave its cursors alone
+	# Warnings.compute only reads timeline averages and does not move its cursors.
+	# The mission can use the same timeline.
 	last_warnings = Warnings.compute(input, timeline)
 	last_input = input
 	mission = Mission.new(input, timeline)
 	return mission
 
 
-## Call once the mission has ended: keeps the result for the report and flies
-## the untouched design for comparison.
+## finish_mission stores the result of the ended mission for the report and runs
+## the baseline, the same design without player changes.
 func finish_mission() -> void:
 	assert(mission != null and mission.state.done, "GameState: finish_mission before the mission ended")
 	previous_result = last_result

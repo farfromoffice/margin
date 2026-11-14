@@ -15,8 +15,8 @@ func _init(p_input: SimInput, p_timeline: OrbitTimeline) -> void:
 	state = Simulator.start(input)
 
 
-## Changes a control between steps and logs it at the current step boundary.
-## Setting the value it already has logs nothing.
+## set_control changes a control between two steps and logs it with the current
+## step time. Setting the value the control already has logs nothing.
 func set_control(control: StringName, value: Variant) -> void:
 	if state.done:
 		return
@@ -32,8 +32,9 @@ func set_control(control: StringName, value: Variant) -> void:
 		auto_pause.rearm_contact()
 
 
-## Runs up to max_steps. Stops right after a step that fires an auto-pause
-## trigger and returns those triggers; returns [] otherwise.
+## advance runs up to max_steps steps. It stops after the first step that fires an
+## auto pause trigger and returns those triggers. It returns an empty array when
+## no trigger fired.
 func advance(max_steps: int) -> Array[StringName]:
 	for k in max_steps:
 		if state.done:
@@ -46,13 +47,13 @@ func advance(max_steps: int) -> Array[StringName]:
 	return []
 
 
-## Flies the rest of the mission with the current controls, no pauses.
+## finish runs the rest of the mission with the current controls and never pauses.
 func finish() -> void:
 	while not state.done:
 		Simulator.step(state, input, controls, timeline)
 
 
-## The same launch configuration flown with its launch settings and no
-## intervention for the report's comparison.
+## baseline runs the same SimInput again from the start with the launch settings
+## and no player changes. The report compares it with the flown mission.
 func baseline() -> RunResult:
 	return Simulator.run(input, timeline.rewound())

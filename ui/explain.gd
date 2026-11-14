@@ -171,7 +171,7 @@ static func days(seconds: Variant) -> String:
 	return "%.1f days" % d if d >= 1.0 else "%.1f hours" % (d * 24.0)
 
 
-## "Day 4, 06:10", mission elapsed time
+## mission_time formats mission elapsed time like "Day 4, 06:10".
 static func mission_time(t_s: float) -> String:
 	var day := int(t_s / 86400.0) + 1
 	var in_day := fmod(t_s, 86400.0)
@@ -209,8 +209,8 @@ static func command(c: Dictionary) -> String:
 	return "%s: %s" % [mission_time(float(c["t_s"])), what]
 
 
-## Lines for Warnings.forecast(). Everything here is an average, so every
-## time reads as "about".
+## forecast turns the numbers of Warnings.forecast into lines for the operations
+## screen. The numbers are averages and the times read as "about".
 static func forecast(f: Dictionary, s: SimState) -> Array[String]:
 	var lines: Array[String] = []
 	var net := float(f["energy_per_orbit_j"])
