@@ -26,11 +26,11 @@ Hackathon: 14 to 15 November 2026, 48 hours. Hours count from kickoff.
 
 ## Phase 2 · First playable (14 to 24 h)
 
-- [ ] Briefing, design screen, launch check feedback
-- [ ] Prediction screen: one or more expected limiting factors
-- [ ] Mission run view: battery, storage, downlink over time
-- [ ] Report: objective result, delivered and lost data with causes, prediction vs actual
-- [ ] Redesign and run again
+- [x] Briefing, design screen, launch check feedback
+- [x] Prediction screen: one or more expected limiting factors
+- [x] Mission run view: battery, storage, downlink over time
+- [x] Report: objective result, delivered and lost data with causes, prediction vs actual
+- [x] Redesign and run again
 - [ ] First playtest, notes in this file
 
 ## Phase 3 · Optional features (24 to 36 h)
@@ -41,6 +41,7 @@ Only after Phase 2 works end to end.
 - [ ] Design comparison (two runs side by side)
 - [ ] Optional: local role-based play at one screen
 - [ ] Optional: further scenarios, sandbox
+- [x] 3D spacecraft preview on the design screen, built from the chosen parts
 
 ## Phase 4 · Freeze (36 to 42 h)
 
@@ -59,4 +60,3 @@ Only after Phase 2 works end to end.
 - Networked multiplayer (needs session management, state sync, conflict handling)
 - Random events with sourced probabilities
 - Leaderboard, competitive team mode, closest real mission card
-- 3D spacecraft view

@@ -19,6 +19,13 @@ func test_mbps_is_not_mistaken_for_mb() -> void:
 	assert_almost_eq(e["size_bits"], 8.0e6, 1e-6)
 
 
+func test_bad_provenance_labels_are_caught() -> void:
+	assert_eq(Catalog.provenance_error({"provenance": "documented", "provenance_fields": {"cost_kusd": "fictional"}}), "")
+	assert_ne(Catalog.provenance_error({"provenance": "guessed"}), "")
+	assert_ne(Catalog.provenance_error({"provenance": "documented", "provenance_fields": {"cost_kusd": "fictonal"}}), "")
+	assert_ne(Catalog.provenance_error({"provenance": "documented", "provenance_fields": "fictional"}), "")
+
+
 func test_shipped_data_is_labelled() -> void:
 	for table in ["components", "launchers", "orbits", "ground_stations"]:
 		for e in Catalog.all(table):

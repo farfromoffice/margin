@@ -2,9 +2,10 @@ extends GutTest
 
 
 func test_values_are_clamped() -> void:
-	var s := Scenario.from_dict({"id": "x", "difficulty": 9, "duration_days": -5, "budget_kusd": -1})
+	var s := Scenario.from_dict({"id": "x", "difficulty": 9, "duration_days": -5, "duration_s": -5.0, "budget_kusd": -1})
 	assert_eq(s.difficulty, 3)
 	assert_eq(s.duration_days, 0)
+	assert_eq(s.duration_s, 0.0)
 	assert_eq(s.budget_kusd, 0.0)
 
 

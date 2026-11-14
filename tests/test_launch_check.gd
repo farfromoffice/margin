@@ -18,8 +18,7 @@ func _catalog() -> FakeCatalog:
 
 func _design() -> MissionDesign:
 	var d := MissionDesign.new()
-	d.component_ids = [&"frame", &"panel", &"pack", &"radio", &"brain", &"wheels"]
-	d.instrument_ids = [&"cam"]
+	d.component_ids = [&"frame", &"panel", &"pack", &"radio", &"brain", &"wheels", &"cam"]
 	d.ground_station_ids = [&"gs"]
 	d.launcher_id = &"rocket"
 	d.orbit_id = &"sso_550"
@@ -27,8 +26,11 @@ func _design() -> MissionDesign:
 	return d
 
 
+## goes through add_si_fields like shipped data, so duration_s exists
 func _scenario(budget := 0.0, max_mass := 0.0) -> Scenario:
-	return Scenario.from_dict({"id": "s", "duration_days": 2, "budget_kusd": budget, "max_mass_kg": max_mass})
+	var d := {"id": "s", "duration_days": 2, "budget_kusd": budget, "max_mass_kg": max_mass}
+	Catalog.add_si_fields(d)
+	return Scenario.from_dict(d)
 
 
 func _kinds(violations: Array[Dictionary]) -> Array:

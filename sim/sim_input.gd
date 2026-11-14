@@ -27,7 +27,7 @@ var initial_energy_j := 0.0
 ## Unknown ids are skipped here; LaunchCheck is the one that complains.
 static func from_design(design: MissionDesign, scenario: Scenario, catalog: Object) -> SimInput:
 	var s := SimInput.new()
-	s.duration_s = scenario.duration_days * 86400.0
+	s.duration_s = scenario.duration_s
 	s.duty_cycle = clampf(design.instrument_duty_cycle, 0.0, 1.0)
 	var battery_seen := false
 	for id in design.component_ids:
@@ -45,7 +45,8 @@ static func from_design(design: MissionDesign, scenario: Scenario, catalog: Obje
 				s.radio_idle_power_w += float(c.get("safe_power_w", 0.0))
 				s.downlink_rate_bps = maxf(s.downlink_rate_bps, float(c.get("rate_bps", 0.0)))
 			"instrument":
-				_add_instrument(s, c)
+				s.instrument_power_w += float(c.get("power_w", 0.0))
+				s.instrument_rate_bps += float(c.get("data_rate_bps", 0.0))
 			_:
 				s.bus_power_w += float(c.get("power_w", 0.0))
 				s.bus_safe_power_w += float(c.get("safe_power_w", 0.0))
@@ -58,14 +59,5 @@ static func from_design(design: MissionDesign, scenario: Scenario, catalog: Obje
 						s.safe_exit_fraction = float(c.get("safe_exit_fraction", 0.0))
 				elif c.get("category") == "obc":
 					s.storage_capacity_bits += float(c.get("storage_bits", 0.0))
-	for id in design.instrument_ids:
-		var c: Dictionary = catalog.get_entry("components", id)
-		if not c.is_empty():
-			_add_instrument(s, c)
 	s.initial_energy_j = s.battery_capacity_j
 	return s
-
-
-static func _add_instrument(s: SimInput, c: Dictionary) -> void:
-	s.instrument_power_w += float(c.get("power_w", 0.0))
-	s.instrument_rate_bps += float(c.get("data_rate_bps", 0.0))

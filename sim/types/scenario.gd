@@ -8,7 +8,9 @@ var title := ""
 var briefing := ""
 ## 1 easy .. 3 hard, also picks the component tier shown in the catalog
 var difficulty := 1
+## duration_days is for showing; the sim reads duration_s, the SI twin Catalog adds
 var duration_days := 0
+var duration_s := 0.0
 var budget_kusd := 0.0
 var max_mass_kg := 0.0
 var allowed_orbit_ids: Array[StringName] = []
@@ -26,6 +28,7 @@ static func from_dict(d: Dictionary) -> Scenario:
 	s.briefing = str(d.get("briefing", ""))
 	s.difficulty = clampi(int(d.get("difficulty", 1)), 1, 3)
 	s.duration_days = maxi(int(d.get("duration_days", 0)), 0)
+	s.duration_s = maxf(float(d.get("duration_s", 0.0)), 0.0)
 	s.budget_kusd = maxf(float(d.get("budget_kusd", 0.0)), 0.0)
 	s.max_mass_kg = maxf(float(d.get("max_mass_kg", 0.0)), 0.0)
 	s.allowed_orbit_ids = _to_names(d.get("allowed_orbit_ids", []))

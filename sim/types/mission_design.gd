@@ -9,9 +9,8 @@ var scenario_id: StringName = &""
 var requirements: Dictionary[StringName, float] = {}
 var launcher_id: StringName = &""
 var orbit_id: StringName = &""
-## bus parts (structure, power, battery, comms, obc, adcs, propulsion)
+## every chosen part, instruments included; the catalog category says what each is
 var component_ids: Array[StringName] = []
-var instrument_ids: Array[StringName] = []
 var ground_station_ids: Array[StringName] = []
 ## share of each step the instrument is on, 0..1. Averaged over every step,
 ## not tied to sunlight.
@@ -25,7 +24,6 @@ func to_dict() -> Dictionary:
 		"launcher_id": String(launcher_id),
 		"orbit_id": String(orbit_id),
 		"component_ids": _to_strings(component_ids),
-		"instrument_ids": _to_strings(instrument_ids),
 		"ground_station_ids": _to_strings(ground_station_ids),
 		"instrument_duty_cycle": instrument_duty_cycle,
 	}
@@ -40,7 +38,6 @@ static func from_dict(d: Dictionary) -> MissionDesign:
 	out.launcher_id = StringName(str(d.get("launcher_id", "")))
 	out.orbit_id = StringName(str(d.get("orbit_id", "")))
 	out.component_ids = _to_names(d.get("component_ids", []))
-	out.instrument_ids = _to_names(d.get("instrument_ids", []))
 	out.ground_station_ids = _to_names(d.get("ground_station_ids", []))
 	# older saves have no duty cycle, those ran the instrument all the time
 	var duty: Variant = d.get("instrument_duty_cycle", 1.0)
