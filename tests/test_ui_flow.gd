@@ -196,6 +196,14 @@ func test_launch_pad_picks_the_failure_mode_and_draws_new_failures() -> void:
 	assert_true(pick.disabled, "locked once the countdown starts")
 
 
+func test_failure_mode_is_a_player_setting_that_outlives_a_mission() -> void:
+	GameState.failure_mode = FailurePlan.Mode.UNCERTAIN
+	_reference_design()
+	assert_eq(GameState.failure_mode, FailurePlan.Mode.UNCERTAIN, "new_mission keeps it")
+	var launch: Control = await _go(&"launch")
+	assert_eq(launch._failure_pick.get_selected_id(), FailurePlan.Mode.UNCERTAIN, "and the launch pad shows it")
+
+
 func test_launch_without_warnings_needs_no_acceptance() -> void:
 	_reference_design()
 	var launch: Control = await _go(&"launch")

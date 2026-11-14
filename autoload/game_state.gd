@@ -26,7 +26,9 @@ var previous_design: MissionDesign
 ## The mission flown on the operations screen. It is null before launch.
 var mission: Mission
 ## How many failures start_mission draws. The same seed and mode give the same
-## failures, so a redesign meets them again at the same times.
+## failures, so a redesign meets them again at the same times. A player setting,
+## not part of a mission: new_mission keeps it and the launch pad shows it before
+## every flight.
 var failure_mode := FailurePlan.Mode.TRAINING
 ## The failure plans last_result and previous_result met, so the report can say
 ## whether two flights met the same failures.
