@@ -131,7 +131,7 @@ func _build_side() -> Control:
 	_duty.step = 0.05
 	_duty.value = _mission.controls.duty_cycle
 	_duty.value_changed.connect(func(v: float):
-		_duty_label.text = "Camera on %d %% of the time" % roundi(v * 100.0)
+		_duty_label.text = Explain.duty(v)
 		if not _duty_dragging:
 			_set_control(Controls.DUTY_CYCLE, v))
 	# A drag passes many values on the way. Only the value where it ends is logged.
@@ -139,7 +139,7 @@ func _build_side() -> Control:
 	_duty.drag_ended.connect(func(_changed: bool):
 		_duty_dragging = false
 		_set_control(Controls.DUTY_CYCLE, _duty.value))
-	_duty_label.text = "Camera on %d %% of the time" % roundi(_duty.value * 100.0)
+	_duty_label.text = Explain.duty(_duty.value)
 	body.add_child(_duty)
 	_radio = CheckButton.new()
 	_radio.text = "Radio sends data during passes"
@@ -150,9 +150,11 @@ func _build_side() -> Control:
 	_faults = UiStyle.label("", 15, UiStyle.TEXT, true)
 	_faults.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.add_child(_faults)
-	var cycles := UiStyle.hbox(6)
-	_cycle_radio = UiStyle.button("Power-cycle radio", _power_cycle.bind(Controls.RADIO_ENABLED))
-	_cycle_camera = UiStyle.button("Power-cycle camera", _power_cycle.bind(Controls.DUTY_CYCLE))
+	var cycles := UiStyle.vbox(6)
+	_cycle_radio = UiStyle.button("Restart radio (clears a lock-up)", _power_cycle.bind(Controls.RADIO_ENABLED))
+	_cycle_camera = UiStyle.button("Restart camera (clears a freeze)", _power_cycle.bind(Controls.DUTY_CYCLE))
+	_cycle_radio.tooltip_text = "Switches the radio off for one minute and back on. Only needed when it locks up."
+	_cycle_camera.tooltip_text = "Switches the camera off for one minute and back on. Only needed when it freezes. To turn it off, move the slider to 0."
 	for b in [_cycle_radio, _cycle_camera]:
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		cycles.add_child(b)
@@ -280,7 +282,7 @@ func _refresh() -> void:
 func _sync_controls() -> void:
 	if not _duty_dragging and not is_equal_approx(_duty.value, _mission.controls.duty_cycle):
 		_duty.set_value_no_signal(_mission.controls.duty_cycle)
-		_duty_label.text = "Camera on %d %% of the time" % roundi(_duty.value * 100.0)
+		_duty_label.text = Explain.duty(_duty.value)
 	_radio.set_pressed_no_signal(_mission.controls.radio_enabled)
 
 
@@ -297,8 +299,9 @@ func _refresh_health() -> void:
 		lines.append("Solar array: %d %% of its design output" % roundi(s.solar_health * 100.0))
 	_faults.text = "All systems nominal" if lines.is_empty() else "\n".join(lines)
 	_faults.add_theme_color_override("font_color", UiStyle.GOOD if lines.is_empty() else UiStyle.WARN)
-	_cycle_radio.disabled = s.done or _mission.is_cycling(Controls.RADIO_ENABLED)
-	_cycle_camera.disabled = s.done or _mission.is_cycling(Controls.DUTY_CYCLE) or _mission.controls.duty_cycle <= 0.0
+	_cycle_radio.disabled = s.done or not s.radio_hung or _mission.is_cycling(Controls.RADIO_ENABLED)
+	_cycle_camera.disabled = s.done or not s.instrument_hung or _mission.is_cycling(Controls.DUTY_CYCLE) \
+			or _mission.controls.duty_cycle <= 0.0
 	# the fix is the obvious next click, so it lights up while something is hung
 	_cycle_radio.modulate = UiStyle.WARN if s.radio_hung else Color.WHITE
 	_cycle_camera.modulate = UiStyle.WARN if s.instrument_hung else Color.WHITE
@@ -352,7 +355,7 @@ func _log_event(e: Dictionary) -> void:
 			_log_line("%s: FAILURE, %s." % [Explain.mission_time(float(e["t_s"])), Explain.failure_name(e["failure"]).to_lower()], UiStyle.BAD)
 			return
 		&"recovered":
-			_log_line("%s: %s cleared by the power cycle." % [Explain.mission_time(float(e["t_s"])), Explain.failure_name(e["failure"])], UiStyle.GOOD)
+			_log_line("%s: %s cleared by the restart." % [Explain.mission_time(float(e["t_s"])), Explain.failure_name(e["failure"])], UiStyle.GOOD)
 			return
 	var seen: int = _day_counts.get(e["kind"], 0)
 	_day_counts[e["kind"]] = seen + 1

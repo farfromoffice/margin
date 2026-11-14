@@ -211,6 +211,8 @@ func test_power_cycle_button_clears_a_hung_radio() -> void:
 	run._mission.advance(5)
 	run._refresh()
 	assert_string_contains(run._faults.text, "LOCKED UP")
+	assert_false(run._cycle_radio.disabled, "a hung radio can be restarted")
+	assert_true(run._cycle_camera.disabled, "the camera is fine")
 	run._cycle_radio.pressed.emit()
 	assert_false(run._radio.button_pressed, "radio off for the cycle")
 	assert_true(run._cycle_radio.disabled)
@@ -239,4 +241,3 @@ func test_menu_opens_how_to_play_and_comes_back() -> void:
 	EventBus.screen_requested.emit(&"main_menu")
 	await wait_process_frames(2)
 	assert_eq(app.current.name, "main_menu")
-
