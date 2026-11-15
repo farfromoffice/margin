@@ -182,9 +182,11 @@ Two choices here go beyond the brief, and both are teaching values the team can 
 - **The low-battery pause has a one-day cooldown.** A weak power design cycles through Safe mode several times a day; re-arming on every recharge gave 226 pauses in one 30-day test mission (one every 0.8 s at 1×). With the cooldown it stops at most once per mission day.
 - **Contact pauses only happen while the radio is off.** The reference design sees about 18 passes a day (527 in 30 days, one every 0.34 s at 1×). With the radio on, transmitting is already the decision. With it off, each new pass is a real choice; after one pause the trigger stays quiet until the player changes the radio again, so leaving it off doesn't interrupt every orbit.
 
-A pause opens a decision panel in place of the mission log (the charts may shrink while it is open). It holds:
+A pause opens a decision panel in place of the mission log (the charts may shrink while it is open). It reads top to bottom:
 
-- the reason, with what broke and how to fix it for a failure;
+- a title naming what paused the clock (the failure name, or the pause names), colored by kind (red for a failure, cyan for a pass, yellow otherwise), with the mission time;
+- what happened (the failure's `explain` from failures.json, or the pause reason);
+- what the player can do: the failure's `fix`, then the sidebar cards that can help;
 - the numbers behind the problem (`Explain.tradeoffs`): how many Wh per orbit the power is short, or what the camera makes against what the radio can send per day, and the exchange rate from `Warnings.camera_step`, the energy per orbit and the data per day of 10 % of camera time;
 - where the mission ends up with the controls as they are now, if nothing else breaks: the goal margin and any coming Safe mode or full memory;
 - the switches and repairs from `Warnings.choices(fired, input, timeline, controls, state)`, each with its effect, and Resume.
@@ -196,6 +198,12 @@ The panel never names a camera time. How far to turn the camera down trades pict
 | `failure` | restart the radio or the camera | that part is hung (the camera only when its time is above 0) |
 | `low_battery`, `safe_enter` | radio off | power is short every orbit and the radio is on; it saves transmit power and sends nothing |
 | `storage_high`, `contact_begin` | radio on | it is off and not hung (a hung radio comes back on with its restart) |
+
+A restart is the one option drawn as recommended (accent edge): it only clears the hang and costs a minute. The switches trade data against power, so they look like Resume.
+
+**Marked controls.** The sidebar groups the controls in cards (Camera, Radio, Spacecraft health, Outlook). While a pause is open, `_helpers` marks the cards that can help with an accent edge and a short tag, only where the simulation backs it: less camera time saves power and memory; a radio switched off saves its sending power, which it only draws in passes (between passes it idles the same on or off), so it is never marked for power while the memory is also filling; a radio switched on empties the memory; a restart clears a hang. A weaker battery or solar array has no repair: the health card says "permanent" and only the power cards are marked. The marks and the "what you can do" line are recomputed whenever a control changes while paused. A switch already made or a restart already running is no longer marked; when nothing is left the line says so. The marks go when the clock runs. Restart buttons only show while a part is hung or restarting.
+
+**Goal met.** Reaching the goal does not end the mission. The header shows "Goal met", the log says so once and that the mission flies on to its last day, and the outlook card repeats it.
 
 ## Forecast
 

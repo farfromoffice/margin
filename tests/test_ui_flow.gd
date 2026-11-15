@@ -103,7 +103,11 @@ func test_operations_clock_runs_and_auto_pauses_on_a_pass_with_the_radio_off() -
 	assert_true(run._decision.visible, "the decision panel opens")
 	var titles: Array = run._options.get_children().map(func(b): return b.text.get_slice("\n", 0))
 	assert_has(titles, "Radio on", "the obvious fix is offered")
-	assert_has(titles, "Resume", "and so is changing nothing")
+	assert_has(titles, "Resume as is", "and so is changing nothing")
+	assert_eq(run._decision_title.text, "Pass begins, radio off")
+	assert_true(run._cards[&"radio"][1].visible, "the radio card is marked")
+	assert_eq(run._cards[&"radio"][1].text, "On: sends data home")
+	assert_false(run._cards[&"camera"][1].visible, "the camera does not matter for a pass")
 	assert_false(run._log_parts[1].visible, "the log makes room for it")
 	assert_gt(m.state.contact_starts, 0)
 	var at := m.state.step
@@ -331,6 +335,106 @@ func test_operations_screen_fits_the_base_window_with_a_pause_banner() -> void:
 	var needed := page.get_combined_minimum_size()
 	assert_lte(needed.x, 1280.0, "width at 1280x720")
 	assert_lte(needed.y, 720.0, "height at 1280x720")
+
+
+func _paused_by(kind: StringName, duty := 0.2, radio := true) -> Control:
+	_reference_design()
+	GameState.design.instrument_duty_cycle = duty
+	GameState.start_mission()
+	var m := GameState.mission
+	var plan: Array[Dictionary] = []
+	if kind != &"":
+		plan.append({"t_s": 86400.0, "kind": kind, "magnitude": 0.3})
+	GameState.mission = Mission.new(m.input, m.timeline, plan)
+	GameState.mission.controls.radio_enabled = radio
+	var run: Control = await _go(&"run")
+	run._set_speed(0)
+	var fired: Array[StringName] = []
+	while fired.is_empty() and not GameState.mission.state.done:
+		fired = GameState.mission.advance(1)
+	run._refresh()
+	run._auto_paused(fired)
+	return run
+
+
+func _tags(run: Control) -> Dictionary:
+	var out := {}
+	for id in run._cards:
+		if run._cards[id][1].visible:
+			out[id] = run._cards[id][1].text
+	return out
+
+
+func test_permanent_failure_points_at_using_less_power_not_a_repair() -> void:
+	for kind in [&"battery_fade", &"solar_loss"]:
+		var run: Control = await _paused_by(kind)
+		assert_eq(run._decision_title.text, Explain.failure_name(kind))
+		assert_string_contains(run._decision_todo.text, "nothing repairs it")
+		assert_eq(_tags(run), {&"camera": "Lower: saves power", &"radio": "Off: saves power in passes"}, "the controls that use power, no repair")
+		assert_string_contains(run._faults.text, "permanent")
+		assert_false(run._cycle_radio.visible or run._cycle_camera.visible, "no restart for a weaker part")
+		assert_true(run._health_note.visible)
+		run._resume()
+		assert_eq(_tags(run), {}, "the marks go when the clock runs")
+
+
+func test_each_pause_marks_only_the_controls_that_help() -> void:
+	var cases := [
+		[[AutoPause.LOW_BATTERY], true, {&"camera": "Lower: saves power", &"radio": "Off: saves power in passes"}],
+		[[AutoPause.SAFE_ENTER], true, {&"camera": "Lower: saves power", &"radio": "Off: saves power in passes"}],
+		[[AutoPause.CONTACT_BEGIN], false, {&"radio": "On: sends data home"}],
+		[[AutoPause.STORAGE_HIGH], false, {&"camera": "Lower: makes less data", &"radio": "On: sends data home"}],
+		[[AutoPause.LOW_BATTERY, AutoPause.STORAGE_HIGH], true, {&"camera": "Lower: less power and data"}],
+	]
+	for c in cases:
+		var run: Control = await _launch()
+		run._set_speed(0)
+		GameState.mission.controls.radio_enabled = c[1]
+		var fired: Array[StringName] = []
+		fired.assign(c[0])
+		run._auto_paused(fired)
+		assert_eq(_tags(run), c[2], str(c[0]))
+		assert_string_contains(run._decision_todo.text, "Marked on the right")
+
+
+func test_hang_points_at_its_restart() -> void:
+	for kind in [&"radio_hang", &"instrument_hang"]:
+		var run: Control = await _paused_by(kind)
+		var tags := _tags(run)
+		assert_eq(tags.get(&"health"), "Restart clears it", String(kind))
+		var button: Button = run._cycle_radio if kind == &"radio_hang" else run._cycle_camera
+		assert_true(button.visible and not button.disabled, "its restart shows and works")
+		assert_true(button.has_theme_stylebox_override("normal"), "and is marked as the recommended click")
+		var titles: Array = run._options.get_children().map(func(b): return b.text.get_slice("\n", 0))
+		assert_has(titles, "Restart radio" if kind == &"radio_hang" else "Restart camera")
+		button.pressed.emit()
+		assert_false(_tags(run).has(&"health"), "a restart already running is not marked again")
+
+
+func test_full_memory_with_the_radio_on_points_at_the_camera() -> void:
+	var run: Control = await _paused_by(&"", 1.0, true)
+	assert_has(run._fired, AutoPause.STORAGE_HIGH)
+	var tags := _tags(run)
+	assert_eq(tags.get(&"camera"), "Lower: makes less data")
+	assert_false(tags.has(&"radio"), "the radio is already on")
+
+
+func test_meeting_the_goal_says_the_mission_flies_on() -> void:
+	_reference_design()
+	# at half the time the reference design meets the goal before day 30
+	GameState.design.instrument_duty_cycle = 0.5
+	GameState.start_mission()
+	var run: Control = await _go(&"run")
+	run._set_speed(0)
+	var m := GameState.mission
+	while m.state.result.delivered_bits_total < run._goal_bits and not m.state.done:
+		m.advance(60)
+	run._refresh()
+	assert_false(m.state.done, "the goal comes before the last day")
+	assert_eq(run._goal.text, "Goal met")
+	var log: Array = run._log.get_children().map(func(l): return l.text)
+	assert_true(log.any(func(t): return "goal met" in t and "flies on to day 30" in t))
+	assert_string_contains(run._forecast.text, "still runs to day 30")
 
 
 func test_power_cycle_button_clears_a_hung_radio() -> void:

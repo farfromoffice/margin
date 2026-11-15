@@ -11,14 +11,17 @@ All notable changes to Margin are listed here. The format follows [Keep a Change
 
 ### Changed
 
+- Operations screen: the pause panel says what happened, what you can do and what happens if you resume as is, in that order. The sidebar groups the controls in cards and marks the ones that can help with the open pause; restart buttons only show when a part is hung. The radio switch no longer looks like a pressed alarm button and the report button stands out when the mission ends.
+- Reaching the goal before the last day now says that the mission flies on and that more data still counts.
 - The prediction is checked against the design alone, without failures or changes in flight; what those added is named apart. The report also tells limits the failures brought from limits of the design.
-
-### Changed
-
 - Flying without a pointing system now costs pictures: the camera faces the ground about a quarter of the time. The design screen and launch pad say so.
 - The report title says whether the goal was met, not only whether the spacecraft survived.
 - How to play explains pointing, what the model leaves out, and the units on screen (kUSD, W in full sun, Wh, MB, Safe mode).
 - Solar panels list their power "in full sun" instead of "peak", and the design screen says what kUSD means.
+
+### Fixed
+
+- The advice for a weaker battery or solar array said to keep the radio off between passes, which saves nothing: the radio only draws its sending power during passes. It now says to switch the radio off for some passes.
 
 ### Removed
 
