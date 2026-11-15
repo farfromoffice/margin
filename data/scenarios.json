@@ -2,7 +2,37 @@
   {
     "id": "wildfire_watch",
     "title": "Wildfire Watch",
-    "briefing": "Fires spread fast in summer. Build a small satellite that spots hot spots from orbit and sends the pictures home for a month.",
+    "briefing": "Fires spread fast in summer. Build a small satellite that photographs the ground from orbit and sends the pictures home for a month.",
+    "intro": [
+      {
+        "kicker": "WHY",
+        "text": "A wildfire can grow fast, and from the ground it is hard to see all of it.",
+        "image": "res://ui/earth/wildfire.jpg"
+      },
+      {
+        "kicker": "WHY",
+        "text": "From orbit a satellite sees a whole region at once. Smoke, burned land and active fire show up in its pictures.",
+        "note": "Satellite image of a wildfire: NASA Earth Observatory.",
+        "image": "res://ui/earth/wildfire.jpg"
+      },
+      {
+        "kicker": "THE MISSION",
+        "text": "You design a small CubeSat whose camera photographs Earth and sends the pictures home.",
+        "note": "In Margin the pictures are counted as data. The game doesn't detect real fires."
+      },
+      {
+        "kicker": "THE GOAL",
+        "text": "{goal} within {days} days."
+      },
+      {
+        "kicker": "THE CHALLENGE",
+        "text": "Sunlight, battery, memory and a few minutes over each ground station decide how much gets home within a budget and what a launcher can lift."
+      },
+      {
+        "kicker": "YOUR ROLE",
+        "text": "Design it. Predict what will limit it. Fly it. Find out why."
+      }
+    ],
     "difficulty": 1,
     "duration_days": 30,
     "budget_kusd": 1000,

@@ -26,7 +26,7 @@ Get the latest build from the [releases page](https://github.com/farfromoffice/m
 
 ## Playing
 
-1. Read the mission briefing and its objective.
+1. Watch the short mission intro (why the satellite matters, the goal, the challenge, your role), then read the briefing and its objective.
 2. Choose an instrument, solar array, battery, radio, ground stations, orbit and launcher. The game blocks launch if the mass, orbit or budget does not fit.
 3. Predict which constraints will limit the design if nothing breaks and nobody touches the controls.
 4. Check the preflight numbers on the launch pad and watch the launch in 3D, from the pad to your spacecraft unfolding in orbit. The ascent is shown, not simulated.

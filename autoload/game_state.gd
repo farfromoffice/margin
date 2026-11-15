@@ -34,6 +34,7 @@ var failure_mode := FailurePlan.Mode.TRAINING
 ## whether two flights met the same failures.
 var last_failures: Array[Dictionary] = []
 var previous_failures: Array[Dictionary] = []
+var intros_seen := {}
 ## The design of last_result flown with its launch settings and no player changes.
 var baseline_result: RunResult
 ## The design of last_result with its launch settings, no failures and no player

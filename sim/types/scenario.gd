@@ -19,6 +19,7 @@ var critical_resources: Array[StringName] = []
 ## goal id -> threshold, e.g. {&"science": 100.0, &"data_downlinked_mb": 5000.0}
 var objectives: Dictionary[StringName, float] = {}
 var sandbox := false
+var intro: Array[Dictionary] = []
 
 
 static func from_dict(d: Dictionary) -> Scenario:
@@ -35,6 +36,9 @@ static func from_dict(d: Dictionary) -> Scenario:
 	s.critical_resources = _to_names(d.get("critical_resources", []))
 	s.objectives = _to_thresholds(d.get("objectives", {}))
 	s.sandbox = bool(d.get("sandbox", false))
+	for beat in d.get("intro", []):
+		if beat is Dictionary and beat.has("text"):
+			s.intro.append(beat)
 	return s
 
 
