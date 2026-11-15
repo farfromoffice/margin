@@ -1,5 +1,9 @@
 extends Control
-## Mission card: the story, the goal and the hard limits, before any design.
+## Mission card: the story, the goal and the hard limits, before any design. A
+## scenario with intro beats opens with them the first time this session.
+
+var _go: Button
+var _intro: MissionIntro
 
 
 func _ready() -> void:
@@ -31,11 +35,38 @@ func _ready() -> void:
 
 	var buttons := UiStyle.hbox(12)
 	buttons.add_child(UiStyle.button("Back", func(): EventBus.screen_requested.emit(&"main_menu")))
-	var go := UiStyle.button("Design the spacecraft", func(): EventBus.screen_requested.emit(&"design"))
-	go.icon = UiStyle.icon("satellite")
-	go.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	buttons.add_child(go)
+	if not s.intro.is_empty():
+		buttons.add_child(UiStyle.button("Replay intro", play_intro))
+	_go = UiStyle.button("Design the spacecraft", func(): EventBus.screen_requested.emit(&"design"))
+	_go.icon = UiStyle.icon("satellite")
+	_go.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	buttons.add_child(_go)
 	col.add_child(buttons)
+
+	if not s.intro.is_empty() and not GameState.intros_seen.has(s.id):
+		play_intro()
+
+
+## play_intro covers the card with the mission intro and fades it out when it ends.
+func play_intro() -> void:
+	if _intro:
+		return
+	var s := GameState.scenario()
+	GameState.intros_seen[s.id] = true
+	_intro = MissionIntro.new()
+	_intro.set_up(s)
+	_intro.finished.connect(_end_intro)
+	add_child(_intro)
+
+
+func _end_intro() -> void:
+	var gone := _intro
+	_intro = null
+	gone.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var tw := gone.create_tween()
+	tw.tween_property(gone, "modulate:a", 0.0, 0.6).set_trans(Tween.TRANS_SINE)
+	tw.tween_callback(gone.queue_free)
+	_go.grab_focus()
 
 
 func _fact(icon_name: String, what: String, value: String) -> HBoxContainer:

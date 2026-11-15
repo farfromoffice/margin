@@ -64,7 +64,7 @@ eclipse_fraction, reference_duration_s and contacts_s are written by `tools/gmat
 
 ## scenarios.json
 
-Matches `sim/types/scenario.gd`: id, title, briefing, difficulty, duration_days (default mission length 30; the engine takes it as input), budget_kusd, max_mass_kg, allowed_orbit_ids, critical_resources, objectives, sandbox.
+Matches `sim/types/scenario.gd`: id, title, briefing, difficulty, duration_days (default mission length 30; the engine takes it as input), budget_kusd, max_mass_kg, allowed_orbit_ids, critical_resources, objectives, sandbox, intro (optional: the beats of the cinematic mission intro on the briefing screen, each `{kicker, text, note, image}`; `text` may use `{goal}` and `{days}`, filled from the scenario, and `image` is a `res://` picture shown behind the beat, the 3D Earth otherwise).
 
 ## ground_stations.json
 
