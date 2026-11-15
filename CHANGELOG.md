@@ -24,6 +24,10 @@ All notable changes to Margin are listed here. The format follows [Keep a Change
 
 - The placeholder `data/real_missions.json`; the closest real mission card is planned for after the hackathon.
 
+### Fixed
+
+- The goal line on the data chart (and the Safe mode line on the battery chart) blinked in and out in windows smaller than 1280x720. It's now drawn as a hairline that always shows.
+
 ## [0.1.0] (2026-11-14)
 
 First playable release, built during the NASA Space Apps Challenge 2026.
