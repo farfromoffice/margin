@@ -13,6 +13,7 @@ tools/test.sh                                   # GUT suite, headless; GODOT=/pa
 godot --headless --import                       # rebuild the class_name cache on a fresh checkout
 godot -e project.godot                          # editor
 python3 tools/gmat/build_orbits.py <GMAT bin>   # regenerate data/orbits.json after orbit or station changes
+tools/build_site.sh [out]                       # assemble the website into build/site
 ```
 
 Run `tools/test.sh` before saying a change is done. All tests must pass.
@@ -27,6 +28,7 @@ Run `tools/test.sh` before saying a change is done. All tests must pass.
 - `tests/`: GUT tests, one file per area.
 - `addons/gut/`: vendored, do not edit.
 - `docs/`: README images, ignored by Godot through `.gdignore`.
+- `site/`: the GitHub Pages website, plain HTML, CSS and JS, ignored by Godot. `site/js/globe.js` mirrors `ui/widgets/earth.gdshader` and `ui/widgets/orbit_view.gd`.
 
 ## Rules
 

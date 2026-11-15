@@ -6,6 +6,8 @@ Margin is a space mission design game made for the NASA Space Apps Challenge 202
 
 ## Download
 
+Website: [farfromoffice.github.io/margin](https://farfromoffice.github.io/margin/)
+
 Get the latest build from the [releases page](https://github.com/farfromoffice/margin/releases/latest):
 
 - Linux: margin-linux-x86_64.zip, unzip it and run margin.x86_64
@@ -51,6 +53,8 @@ Orbit eclipse and contact data in `data/orbits.json` come from GMAT R2025a. Afte
 ```sh
 python3 tools/gmat/build_orbits.py /path/to/GMAT/R2025a/bin
 ```
+
+The website lives in `site/` and reuses the game's screenshots, fonts and Earth maps. `tools/build_site.sh` puts it together in `build/site`, and the Website workflow publishes it to GitHub Pages on every push to main that touches it. The globe in its hero is a WebGL port of `ui/widgets/earth.gdshader` and `ui/widgets/orbit_view.gd`, so keep `site/js/globe.js` in step when those change.
 
 Code layout: `sim/` is pure simulation logic (see DESIGN.md), `ui/` holds the screens (`ui/screens/`), the 3D launch site (`ui/launch/`), widgets, icons and fonts, `scenes/app.tscn` is the entry point and swaps screens on `EventBus.screen_requested`.
 

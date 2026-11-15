@@ -4,6 +4,10 @@ All notable changes to Margin are listed here. The format follows [Keep a Change
 
 ## [Unreleased]
 
+### Added
+
+- Project website with downloads for the latest release, the gameplay video and the main menu's turning Earth.
+
 ## [0.1.0] (2026-11-15)
 
 First playable release, built during the NASA Space Apps Challenge 2026.
