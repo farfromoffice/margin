@@ -39,6 +39,98 @@ func test_menu_play_opens_briefing() -> void:
 	assert_eq(GameState.scenario_id, &"wildfire_watch")
 
 
+func _esc() -> void:
+	var e := InputEventAction.new()
+	e.action = &"ui_cancel"
+	e.pressed = true
+	app._unhandled_input(e)
+	await wait_process_frames(2)
+
+
+func test_escape_pauses_a_running_mission_and_restores_its_speed() -> void:
+	for speed in [1, 16]:
+		var run: Control = await _launch()
+		run._set_speed(speed)
+		var step: int = GameState.mission.state.step
+		await _esc()
+		assert_not_null(run._menu, "Escape opens the menu")
+		assert_true(run._clock.paused)
+		run._process(1.0)
+		assert_eq(GameState.mission.state.step, step, "no time passes under the menu")
+		assert_true(run._speed_buttons[speed].button_pressed, "the speed shown stays")
+		await _esc()
+		assert_null(run._menu, "Escape again closes it")
+		assert_false(run._clock.paused, "and the clock runs again")
+		assert_eq(run._clock.speed, speed, "at %d×" % speed)
+
+
+func test_escape_keeps_an_auto_pause_paused() -> void:
+	_reference_design()
+	GameState.start_mission()
+	var m := GameState.mission
+	GameState.mission = Mission.new(m.input, m.timeline, [{"t_s": 0.0, "kind": &"radio_hang", "magnitude": 0.0}])
+	var run: Control = await _go(&"run")
+	run._set_speed(4)
+	var fired: Array[StringName] = []
+	while fired.is_empty():
+		fired = GameState.mission.advance(1)
+	run._auto_paused(fired)
+	var duty: float = GameState.mission.controls.duty_cycle
+	var radio: bool = GameState.mission.controls.radio_enabled
+	await _esc()
+	await _esc()
+	assert_true(run._clock.paused, "paused before the menu, paused after")
+	assert_true(run._decision.visible, "the failure panel is still open")
+	assert_eq(GameState.mission.controls.duty_cycle, duty)
+	assert_eq(GameState.mission.controls.radio_enabled, radio, "no control changed")
+	run._resume()
+	assert_eq(run._clock.speed, 4, "resuming the pause still goes back to 4×")
+
+
+func test_leaving_a_mission_asks_first_and_then_starts_clean() -> void:
+	var run: Control = await _launch()
+	var menu: Button = run.find_children("*", "Button", true, false).filter(func(b): return b.text == "Menu (Esc)")[0]
+	menu.pressed.emit()
+	assert_not_null(run._menu, "the mouse opens the menu too")
+	run._menu_step(true)
+	assert_true(run._menu_confirming)
+	await _esc()
+	assert_false(run._menu_confirming, "Escape steps back from the question")
+	assert_not_null(run._menu, "without closing the menu")
+	run._menu_step(true)
+	var leave: Button = run._menu_box.find_children("*", "Button", true, false).filter(func(b): return b.text == "Leave mission")[0]
+	leave.pressed.emit()
+	await wait_process_frames(2)
+	assert_eq(app.current.name, "main_menu")
+	assert_null(GameState.mission, "the flight is dropped")
+	GameState.new_mission(&"wildfire_watch", 1)
+	var briefing: Control = await _go(&"briefing")
+	assert_eq(briefing.name, "briefing", "a new mission starts normally")
+
+
+func test_escape_on_the_other_screens_steps_back() -> void:
+	GameState.intros_seen[&"wildfire_watch"] = true
+	_reference_design()
+	var cases := [[&"how_to_play", "main_menu"], [&"briefing", "main_menu"], [&"design", "briefing"], [&"prediction", "design"], [&"launch", "prediction"]]
+	for c in cases:
+		await _go(c[0])
+		await _esc()
+		assert_eq(app.current.name, c[1], "Escape on %s" % c[0])
+	await _go(&"main_menu")
+	await _esc()
+	assert_eq(app.current.name, "main_menu", "nothing to go back to from the menu")
+
+
+func test_escape_during_the_launch_skips_it_and_stays() -> void:
+	_reference_design()
+	var launch: Control = await _go(&"launch")
+	launch._begin()
+	await _esc()
+	assert_eq(app.current.name, "launch", "never leaves halfway through the sequence")
+	assert_true(launch._skip.disabled, "it skipped to orbit")
+	assert_false(launch._ops.disabled, "and operations can start")
+
+
 func test_empty_design_blocks_launch() -> void:
 	GameState.new_mission(&"wildfire_watch", 1)
 	var design: Control = await _go(&"design")

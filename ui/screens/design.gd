@@ -84,6 +84,11 @@ func _ready() -> void:
 	_refresh()
 
 
+## Escape goes back to the briefing like the button. The design stays as it is.
+func on_escape() -> void:
+	EventBus.screen_requested.emit(&"briefing")
+
+
 func _category_picker(cat: String) -> Control:
 	var box := UiStyle.vbox(6)
 	box.add_child(UiStyle.section(Explain.category(cat).capitalize(), Explain.icon_for(cat)))

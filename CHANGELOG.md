@@ -6,6 +6,7 @@ All notable changes to Margin are listed here. The format follows [Keep a Change
 
 ### Added
 
+- Escape in flight opens a pause menu (Resume, or Return to main menu after a confirmation) that leaves the clock, speed and controls as they were; a "Menu (Esc)" button opens it with the mouse. On the other screens Escape goes back one step and during the launch it skips to orbit.
 - Wildfire Watch opens with a short mission intro on the briefing screen: why satellites help watch wildfires, the goal, what limits it and the player's role. It plays once per session and can be skipped or replayed.
 - Failure modes on the launch pad: Training (1 to 3 failures, as before), Uncertain (0 to 3) or None, and a button to draw new failures. The report says whether two flights met the same failures.
 

@@ -47,6 +47,14 @@ func _ready() -> void:
 		play_intro()
 
 
+## Escape skips the intro if it plays, else goes back to the menu like Back.
+func on_escape() -> void:
+	if _intro:
+		_intro.skip()
+	else:
+		EventBus.screen_requested.emit(&"main_menu")
+
+
 ## play_intro covers the card with the mission intro and fades it out when it ends.
 func play_intro() -> void:
 	if _intro:

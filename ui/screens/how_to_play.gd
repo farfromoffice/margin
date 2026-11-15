@@ -48,6 +48,11 @@ func _ready() -> void:
 	col.add_child(back)
 
 
+## Escape goes back to the menu like the button.
+func on_escape() -> void:
+	EventBus.screen_requested.emit(&"main_menu")
+
+
 func _grid(cards: Array, columns: int) -> GridContainer:
 	var grid := GridContainer.new()
 	grid.columns = columns

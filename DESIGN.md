@@ -164,6 +164,8 @@ The simulation runs on a mission clock, decoupled from rendering:
 
 Each frame adds `real_delta × rate` to a time debt and runs `floor(debt / dt_s)` steps, keeping the remainder, so the step count depends only on elapsed real time, not on the frame rate. At most one mission day of steps (1440) runs per frame; debt beyond that is dropped, so a frame hitch never fast-forwards the mission. Pausing clears the debt. The UI redraws once per frame, never per step.
 
+**Escape.** `App` passes Escape to the screen on show when it has `on_escape()`. In flight it opens a pause menu (also the "Menu (Esc)" button): it stops the clock and keeps whether it ran. Closing it (Escape or Resume) restores exactly that state, speed, decision panel and controls untouched; it covers the screen and takes every click. "Return to main menu" asks first, Escape steps back from the question, and leaving drops `GameState.mission` with the screen and its clock. Elsewhere Escape is the screen's Back: briefing and How to play to the menu (the intro skips first), design to briefing, prediction to design, launch pad to prediction (during the launch it skips to orbit instead), report to the menu. The main menu ignores it.
+
 ## Auto-pause
 
 Checked after every simulation step, never per frame. When one fires, the step that triggered it completes, the remaining steps of that frame are not run and the clock pauses. Each trigger fires on a crossing, not while a condition stays true, and re-arms only after recovering past a separate level:

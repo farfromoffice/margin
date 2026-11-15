@@ -35,6 +35,16 @@ func _share_cursor() -> void:
 	Input.set_custom_mouse_cursor(load(path), Input.CURSOR_DRAG, hotspot)
 
 
+## _unhandled_input passes Escape to the screen on show. Each screen that has an
+## on_escape() decides what it means there (a step back, or the pause menu in
+## flight); a screen without one ignores it. Widgets that use Escape themselves,
+## like the mission intro, take it first.
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed(&"ui_cancel") and current and current.has_method(&"on_escape"):
+		get_viewport().set_input_as_handled()
+		current.on_escape()
+
+
 func show_screen(screen: StringName) -> void:
 	if not SCREENS.has(screen):
 		push_error("App: unknown screen %s" % screen)

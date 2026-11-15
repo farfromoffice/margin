@@ -63,6 +63,11 @@ func _ready() -> void:
 	col.add_child(buttons)
 
 
+## Escape goes to the main menu. The flight is over and read.
+func on_escape() -> void:
+	EventBus.screen_requested.emit(&"main_menu")
+
+
 func _title(text: String, color: Color) -> Label:
 	var l := UiStyle.label(text, 34, color)
 	l.theme_type_variation = &"DisplayLabel"

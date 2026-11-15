@@ -157,6 +157,15 @@ func _begin() -> void:
 	_scene.launch()
 
 
+## Escape skips the launch while it plays and it never leaves the screen halfway
+## through the sequence. Otherwise it goes back to the prediction like the button.
+func on_escape() -> void:
+	if not _skip.disabled:
+		skip_sequence()
+	else:
+		EventBus.screen_requested.emit(&"prediction")
+
+
 ## Jumps the scene to orbit; it logs every milestone left on the way.
 func skip_sequence() -> void:
 	_go.disabled = true

@@ -68,6 +68,13 @@ var _next_event := 0
 var _shown_day := -1
 var _forecast_day := -1
 var _ended := false
+## The Escape menu over the screen, null while closed. It stops the clock and
+## keeps whether the clock ran before and closing it puts back exactly that: the
+## speed, the decision panel and the controls are never touched.
+var _menu: Control
+var _menu_box: VBoxContainer
+var _menu_confirming := false
+var _menu_was_paused := false
 ## event kind -> how often it fired on the day being logged. A weak design can
 ## flip in and out of Safe mode every orbit, one line each would bury the log.
 var _day_counts := {}
@@ -271,7 +278,15 @@ func _build_side() -> Control:
 	_report = UiStyle.button("Read the report", func(): EventBus.screen_requested.emit(&"report"))
 	_report.icon = UiStyle.icon("data")
 	_report.disabled = true
-	side.add_child(_finish)
+	# the Escape menu needs a way in for the mouse too
+	var menu := Button.new()
+	menu.text = "Menu (Esc)"
+	menu.pressed.connect(on_escape)
+	_finish.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var footer := UiStyle.hbox(8)
+	footer.add_child(_finish)
+	footer.add_child(menu)
+	side.add_child(footer)
 	side.add_child(_report)
 	var p := UiStyle.panel(side)
 	p.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -637,6 +652,85 @@ func _update_forecast() -> void:
 	_forecast.text = head + "\n" + "\n".join(lines)
 	if not _duty_dragging:
 		_show_effects(_mission.controls.duty_cycle)
+
+
+## on_escape opens the menu, steps back from its confirmation or closes it.
+func on_escape() -> void:
+	if _menu == null:
+		_open_menu()
+	elif _menu_confirming:
+		_menu_step(false)
+	else:
+		_close_menu()
+
+
+func _open_menu() -> void:
+	_menu_was_paused = _clock.paused
+	_clock.set_paused(true)
+	_menu = Control.new()
+	_menu.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# stops every click. nothing under the menu can be pressed
+	_menu.mouse_filter = Control.MOUSE_FILTER_STOP
+	var dim := ColorRect.new()
+	dim.color = Color(UiStyle.BG, 0.75)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_menu.add_child(dim)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_menu.add_child(center)
+	_menu_box = UiStyle.vbox(12)
+	_menu_box.custom_minimum_size.x = 440
+	center.add_child(UiStyle.panel(_menu_box))
+	add_child(_menu)
+	_menu_step(false)
+
+
+## _menu_step fills the menu: the first step offers Resume and leaving, the
+## second asks before the flight is thrown away. The safe button has the focus.
+func _menu_step(confirm: bool) -> void:
+	_menu_confirming = confirm
+	for child in _menu_box.get_children():
+		_menu_box.remove_child(child)
+		child.queue_free()
+	var buttons := UiStyle.hbox(10)
+	var safe: Button
+	if not confirm:
+		_menu_box.add_child(UiStyle.heading("Mission paused", 26))
+		_menu_box.add_child(UiStyle.label("The mission clock is stopped. Nothing changes while this is open.", 15, UiStyle.MUTED, true))
+		safe = UiStyle.button("Resume", _close_menu)
+		safe.add_theme_stylebox_override("normal", _recommended)
+		buttons.add_child(safe)
+		buttons.add_child(UiStyle.button("Return to main menu", _menu_step.bind(true)))
+	else:
+		_menu_box.add_child(UiStyle.heading("Leave this mission?", 26))
+		var lost := "The flight is over, but its report is not kept once you leave." if _ended \
+				else "This flight is lost. Margin has no save; the next mission starts from the briefing."
+		_menu_box.add_child(UiStyle.label(lost, 15, UiStyle.TEXT, true))
+		safe = UiStyle.button("Stay", _menu_step.bind(false))
+		buttons.add_child(safe)
+		var leave := UiStyle.button("Leave mission", _leave_mission)
+		leave.add_theme_stylebox_override("normal", UiStyle._box(UiStyle.BAD.darkened(0.6), 6, 10, UiStyle.BAD, 2))
+		buttons.add_child(leave)
+	for b in buttons.get_children():
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_menu_box.add_child(buttons)
+	_menu_box.add_child(UiStyle.label("Esc: %s" % ("back" if confirm else "resume"), 13, UiStyle.MUTED))
+	(func(): if is_instance_valid(safe) and safe.is_inside_tree(): safe.grab_focus()).call_deferred()
+
+
+func _close_menu() -> void:
+	_menu.queue_free()
+	_menu = null
+	_menu_confirming = false
+	_clock.set_paused(_menu_was_paused)
+
+
+## _leave_mission drops the flight and goes to the menu. The screen and its clock
+## are freed with it.
+func _leave_mission() -> void:
+	_ended = true
+	GameState.mission = null
+	EventBus.screen_requested.emit(&"main_menu")
 
 
 func _finish_now() -> void:

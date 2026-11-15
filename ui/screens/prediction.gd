@@ -46,6 +46,11 @@ func _ready() -> void:
 	col.add_child(buttons)
 
 
+## Escape goes back to the design.
+func on_escape() -> void:
+	EventBus.screen_requested.emit(&"design")
+
+
 func _launch() -> void:
 	GameState.prediction.clear()
 	for f in _boxes:
