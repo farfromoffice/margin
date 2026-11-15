@@ -31,7 +31,7 @@ Hackathon: 14 to 15 November 2026, 48 hours. Hours count from kickoff.
 - [x] Mission run view: battery, storage, downlink over time
 - [x] Report: objective result, delivered and lost data with causes, prediction vs actual
 - [x] Redesign and run again
-- [ ] First playtest, notes in this file
+- [x] Informal playtesting by the team and friends; the issues they found were fixed (unclear mission purpose, pause panel and controls, the goal line, no way to leave a mission). No structured usability study was run. The remaining design concerns from a player's point of view are in the review notes (sandbox depth, predictable part choices), not results from user testing.
 
 ## Phase 3 · Optional features (24 to 36 h)
 
@@ -49,9 +49,9 @@ Only after Phase 2 works end to end.
 
 ## Phase 4 · Freeze (36 to 42 h)
 
-- [ ] Code freeze, bug fixes
-- [ ] Final Linux and Windows builds
-- [ ] Docs up to date
+- [x] Code freeze, bug fixes
+- [x] Final Linux and Windows builds exported from main and launched (Windows via Wine); published by pushing a `v*` tag
+- [x] Docs up to date
 
 ## Phase 5 · Submit (42 to 48 h)
 

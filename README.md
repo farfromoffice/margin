@@ -27,11 +27,15 @@ Get the latest build from the [releases page](https://github.com/farfromoffice/m
 ## Playing
 
 1. Watch the short mission intro (why the satellite matters, the goal, the challenge, your role), then read the briefing and its objective.
-2. Choose an instrument, solar array, battery, radio, ground stations, orbit and launcher. The game blocks launch if the mass, orbit or budget does not fit.
+2. Choose an instrument, solar array, battery, radio, an optional pointing system, ground stations, orbit and launcher. The game blocks launch if the mass, budget, orbit or structure size does not fit and warns about power, downlink, memory and pointing.
 3. Predict which constraints will limit the design if nothing breaks and nobody touches the controls.
-4. Check the preflight numbers on the launch pad and watch the launch in 3D, from the pad to your spacecraft unfolding in orbit. The ascent is shown, not simulated.
-5. Fly the mission: change the camera on-time and the radio while it runs, and deal with failures as they happen (a restart clears a frozen radio or camera). Hardware, orbit and launcher are locked after launch.
+4. Check the preflight numbers on the launch pad, pick how many failures may strike (Training 1 to 3, Uncertain 0 to 3, or None) and watch the launch in 3D, from the pad to your spacecraft unfolding in orbit. The ascent is shown, not simulated.
+5. Fly the mission: change the camera on-time and the radio while it runs, and deal with failures as they happen (a restart clears a frozen radio or camera). When the clock pauses for a decision, the controls that can help are marked. Hardware, orbit and launcher are locked after launch. Esc pauses and lets you leave the mission.
 6. Read the report, change the design, try again.
+
+## What is simulated
+
+Orbits, eclipses and ground station passes come from NASA GMAT R2025a runs. The spacecraft is simulated in 60 second steps: solar power, battery, Normal and Safe mode, data made by the camera, stored and sent home during passes. Pictures are counted as data volume; the game makes no real images and detects no real fires. Not modelled: air drag, heat, radio link budgets, attitude dynamics. Costs, failure counts and the pointing benefit are teaching values, not measurements. Every number in `data/` carries its source and a documented, approximation or fictional label; details in [RESEARCH.md](RESEARCH.md).
 
 ## Development
 
