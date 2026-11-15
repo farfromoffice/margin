@@ -1,0 +1,71 @@
+/* Margin website tokens, lifted from ui/ui_style.gd so the site and the game share one look */
+
+@font-face {
+	font-family: "Orbitron";
+	src: url("../fonts/Orbitron.ttf") format("truetype");
+	font-weight: 400 900;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: "Exo 2";
+	src: url("../fonts/Exo2.ttf") format("truetype");
+	font-weight: 100 900;
+	font-display: swap;
+}
+
+:root {
+	color-scheme: dark;
+
+	/* game BG, PANEL, PANEL_LIGHT and friends, in OKLCH */
+	--color-space: oklch(14.3% 0.025 269);
+	--color-space-2: oklch(19.5% 0.038 267);
+	--color-panel: oklch(22.2% 0.045 266);
+	--color-line: oklch(32.4% 0.057 253);
+	--color-text: oklch(93.4% 0.013 271);
+	--color-body: oklch(83.6% 0.025 270);
+	--color-muted: oklch(70% 0.040 272);
+	--color-accent: oklch(78.7% 0.147 73);
+	--color-accent-hover: oklch(84% 0.130 75);
+	--color-accent-ink: oklch(19.4% 0.027 87);
+	--color-cyan: oklch(81.6% 0.119 228);
+	--color-focus: oklch(81.6% 0.119 228);
+	--color-shade: oklch(14.3% 0.025 269 / 0.72);
+	--color-star: oklch(93.4% 0.013 271 / 0.55);
+	--color-drop: oklch(0% 0 0 / 0.8);
+
+	--font-display: "Orbitron", "Exo 2", system-ui, sans-serif;
+	--font-body: "Exo 2", system-ui, sans-serif;
+
+	--text-xs: 0.875rem;
+	--text-sm: 1rem;
+	--text-md: 1.125rem;
+	--text-lg: 1.375rem;
+	--text-xl: clamp(1.75rem, 1.2rem + 2vw, 2.5rem);
+	--text-display: clamp(2.5rem, 1.4rem + 4vw, 4.75rem);
+
+	--space-2xs: 0.25rem;
+	--space-xs: 0.5rem;
+	--space-sm: 0.75rem;
+	--space-md: 1rem;
+	--space-lg: 1.5rem;
+	--space-xl: 2rem;
+	--space-2xl: 3rem;
+	--space-3xl: 5rem;
+	--space-4xl: 8rem;
+
+	--radius-sm: 6px;
+	--radius-md: 12px;
+
+	--rule-hair: 1px solid var(--color-line);
+
+	--ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+	--ease-in: cubic-bezier(0.55, 0, 1, 0.45);
+	--ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+	--dur-fast: 120ms;
+	--dur-mid: 220ms;
+	--dur-slow: 480ms;
+
+	--measure: 62ch;
+	--page: 72rem;
+}

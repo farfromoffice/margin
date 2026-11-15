@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Margin · Every gram counts</title>
+<meta name="description" content="Margin is a free space mission design game. Build a small satellite, predict what will limit it, launch it, fly it and find out why. Made for the NASA Space Apps Challenge 2026.">
+<meta name="theme-color" content="#060914">
+<meta property="og:title" content="Margin · Every gram counts">
+<meta property="og:description" content="Design a small satellite, predict what will limit it, fly it for a month and find out why.">
+<meta property="og:image" content="img/main_menu.jpg">
+<meta property="og:type" content="website">
+<link rel="icon" href="img/app_icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/site.css">
+<script src="js/site.js" defer></script>
+<script src="js/globe.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav" id="top">
+	<a class="nav__brand" href="#top" aria-label="Margin, back to top">
+		<img src="img/app_icon.svg" alt="" width="32" height="32">
+		<span>MARGIN</span>
+	</a>
+	<nav aria-label="Sections">
+		<ul class="nav__links">
+			<li><a href="#loop">How it plays</a></li>
+			<li><a href="#watch">Watch</a></li>
+			<li><a href="#data">NASA data</a></li>
+			<li><a href="#team">Team</a></li>
+		</ul>
+	</nav>
+	<a class="btn btn--small" href="#download">Download</a>
+</header>
+
+<main id="main">
+
+<section class="hero">
+	<div class="hero__copy">
+		<p class="kicker">NASA Space Apps Challenge 2026 · Space Mission Design Game</p>
+		<h1 class="hero__title">Every gram counts.</h1>
+		<p class="hero__lede">Margin is a free space mission design game. Build a small Earth observation satellite, predict what will hold it back, launch it, fly it for a month and read exactly why it ended the way it did.</p>
+		<div class="hero__actions" data-download>
+			<a class="btn btn--primary" data-os="windows" href="https://github.com/farfromoffice/margin/releases/latest/download/margin-windows-x86_64.zip">Download for Windows</a>
+			<a class="btn btn--ghost" data-os="linux" href="https://github.com/farfromoffice/margin/releases/latest/download/margin-linux-x86_64.zip">Download for Linux</a>
+		</div>
+		<p class="hero__meta"><span data-release-name>Latest release</span> · free · no account · source on <a href="https://github.com/farfromoffice/margin">GitHub</a></p>
+	</div>
+	<div class="globe" data-globe role="img" aria-label="Earth turning slowly, lit from the left, with city lights on the night side and a satellite circling on a tilted orbit, the same globe as the game's main menu">
+		<canvas class="globe__back" aria-hidden="true"></canvas>
+		<canvas class="globe__planet" aria-hidden="true"></canvas>
+		<canvas class="globe__front" aria-hidden="true"></canvas>
+		<img class="globe__fallback" src="img/orbit.jpg" alt="" width="1920" height="1080">
+	</div>
+</section>
+
+<section class="loop" id="loop" aria-labelledby="loop-title">
+	<div class="section-head">
+		<h2 id="loop-title">One mission, four moves.</h2>
+		<p>Every run is the same short loop. The trade-offs are what change.</p>
+	</div>
+	<div class="loop__body">
+		<div class="loop__tabs" role="tablist" aria-label="The player's loop">
+			<button class="loop__tab" role="tab" id="tab-design" aria-controls="panel-loop" aria-selected="true" data-shot="img/design.jpg" data-alt="Design screen with parts on the left, a 3D preview of the satellite in the middle and live mass, cost, power and data margins on the right">
+				<span class="loop__num">1</span><span class="loop__name">Design</span>
+				<span class="loop__text">Pick an instrument, solar array, battery, radio, ground stations, orbit and launcher. Mass, cost, power and data margins move with every click.</span>
+			</button>
+			<button class="loop__tab" role="tab" id="tab-predict" aria-controls="panel-loop" aria-selected="false" tabindex="-1" data-shot="img/launch_pad.jpg" data-alt="Launch pad with the rocket on the tower and the preflight GO or NO GO checklist">
+				<span class="loop__num">2</span><span class="loop__name">Predict</span>
+				<span class="loop__text">Say what will limit the design before it flies, then check the preflight numbers on the pad.</span>
+			</button>
+			<button class="loop__tab" role="tab" id="tab-fly" aria-controls="panel-loop" aria-selected="false" tabindex="-1" data-shot="img/operations.jpg" data-alt="Mission operations screen with battery, memory and downlink charts, the mission clock and the camera and radio controls">
+				<span class="loop__num">3</span><span class="loop__name">Fly</span>
+				<span class="loop__text">Watch it launch in 3D, then run the camera and radio for 30 days. Batteries fade, solar strings fail, radios freeze. A restart helps, sometimes.</span>
+			</button>
+			<button class="loop__tab" role="tab" id="tab-learn" aria-controls="panel-loop" aria-selected="false" tabindex="-1" data-shot="img/report.jpg" data-alt="Mission report showing the goal result, where the data went, lowest battery and the prediction against what really happened">
+				<span class="loop__num">4</span><span class="loop__name">Learn</span>
+				<span class="loop__text">The report shows where every megabyte went, what limited you and whether that came from the design, the failures or your calls in flight.</span>
+			</button>
+		</div>
+		<figure class="loop__shot" id="panel-loop" role="tabpanel" aria-labelledby="tab-design">
+			<img src="img/design.jpg" alt="Design screen with parts on the left, a 3D preview of the satellite in the middle and live mass, cost, power and data margins on the right" width="1920" height="1080" loading="lazy">
+		</figure>
+	</div>
+</section>
+
+<section class="brief" aria-labelledby="brief-title">
+	<div class="brief__img">
+		<img src="img/wildfire.jpg" alt="Satellite view of a large wildfire with smoke drifting across forested hills" width="1290" height="860" loading="lazy">
+	</div>
+	<div class="brief__copy">
+		<p class="kicker">Featured mission</p>
+		<h2 id="brief-title">Wildfire Watch</h2>
+		<p>Fires spread fast in summer. Build a small satellite that spots hot spots from orbit and sends the pictures home for a month.</p>
+		<dl class="brief__stats">
+			<div><dt>Mission</dt><dd>30 days</dd></div>
+			<div><dt>Mass limit</dt><dd>12 kg</dd></div>
+			<div><dt>Budget</dt><dd>1,000 kUSD</dd></div>
+			<div><dt>Goal</dt><dd>100,000 MB home</dd></div>
+		</dl>
+		<p class="brief__note">Prefer to tinker? Sandbox mode drops the limits and the goal.</p>
+	</div>
+</section>
+
+<section class="watch" id="watch" aria-labelledby="watch-title">
+	<div class="section-head">
+		<h2 id="watch-title">See a full run.</h2>
+		<p>Five minutes: a cheap first design, everything space throws at it, the report, a redesign and a second flight.</p>
+	</div>
+	<div class="watch__frame" data-video="WDuPJPrpfrY">
+		<a class="watch__poster" href="https://www.youtube.com/watch?v=WDuPJPrpfrY">
+			<img src="img/main_menu.jpg" alt="" width="1920" height="1080" loading="lazy">
+			<span class="watch__play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Play the gameplay video</span>
+		</a>
+	</div>
+</section>
+
+<section class="data" id="data" aria-labelledby="data-title">
+	<div class="data__copy">
+		<h2 id="data-title">Real orbits. A real Earth.</h2>
+		<p>The numbers behind the game are sourced, not made up for it. Simplified teaching values are labelled as such.</p>
+		<ul class="data__list">
+			<li><h3>NASA GMAT</h3><p>The General Mission Analysis Tool computes every orbit and every ground station pass the game uses, from Svalbard to Wallops.</p></li>
+			<li><h3>Blue Marble &amp; Black Marble</h3><p>NASA Earth Observatory imagery wraps the 3D Earth: the day side, and the city lights on the night side.</p></li>
+			<li><h3>Every value has a source</h3><p>Parts, launchers and stations each carry a source and a provenance label in the game data.</p></li>
+		</ul>
+	</div>
+	<figure class="data__img">
+		<img src="img/black_marble.jpg" alt="NASA Black Marble map of Earth at night, with city lights across the continents" width="2048" height="1024" loading="lazy">
+		<figcaption>Black Marble 2016, NASA Earth Observatory</figcaption>
+	</figure>
+</section>
+
+<section class="download" id="download" aria-labelledby="download-title">
+	<h2 id="download-title">Fly your first mission.</h2>
+	<p class="download__lede">Free and open source. Unzip, run, play. No installer, no account.</p>
+	<div class="download__grid">
+		<a class="platform" data-os="windows" href="https://github.com/farfromoffice/margin/releases/latest/download/margin-windows-x86_64.zip">
+			<span class="platform__name">Windows</span>
+			<span class="platform__file">margin-windows-x86_64.zip<span data-size="margin-windows-x86_64.zip"></span></span>
+			<span class="platform__how">Unzip and run margin.exe</span>
+		</a>
+		<a class="platform" data-os="linux" href="https://github.com/farfromoffice/margin/releases/latest/download/margin-linux-x86_64.zip">
+			<span class="platform__name">Linux</span>
+			<span class="platform__file">margin-linux-x86_64.zip<span data-size="margin-linux-x86_64.zip"></span></span>
+			<span class="platform__how">Unzip and run margin.x86_64</span>
+		</a>
+	</div>
+	<p class="download__fine">Needs a 64 bit PC with OpenGL 3.3. Every build and its changes are on the <a href="https://github.com/farfromoffice/margin/releases">releases page</a>.</p>
+</section>
+
+<section class="team" id="team" aria-labelledby="team-title">
+	<h2 id="team-title">Made by farfromoffice.</h2>
+	<p>Four people, one weekend, built in Godot for the <a href="https://www.spaceappschallenge.org/2026/challenges/space-mission-design-game/">Space Mission Design Game</a> challenge.</p>
+	<ul class="team__list">
+		<li>xRookieFight</li>
+		<li>nepinhum</li>
+		<li>Menowinc</li>
+		<li>alphaxrd</li>
+	</ul>
+</section>
+
+</main>
+
+<footer class="foot">
+	<p class="foot__line">MARGIN · <a href="https://github.com/farfromoffice/margin">Source</a> · <a href="https://github.com/farfromoffice/margin/blob/main/CHANGELOG.md">Changelog</a> · <a href="https://github.com/farfromoffice/margin/blob/main/LICENSE">MIT License</a></p>
+	<p class="foot__fine">Margin is an independent team project for the NASA Space Apps Challenge. It is not a NASA product and is not endorsed by NASA. Earth imagery: NASA Earth Observatory. Fonts: Orbitron and Exo 2, SIL Open Font License.</p>
+</footer>
+</body>
+</html>
