@@ -250,8 +250,8 @@ func _pad_update(delta: float) -> void:
 	_pad_smoke.emitting = burning and _t < T_LIFTOFF + 5.0
 	if _t >= T_LIFTOFF:
 		_rocket.trail.emitting = true
-		# hmm, not real thrust: just enough acceleration to clear the tower in
-		# about four seconds and be a dot by the cut
+		# not real thrust, only enough acceleration to clear the tower in about four
+		# seconds and be a dot by the cut.
 		var tau := _t - T_LIFTOFF
 		_vel = l * (tau / 8.0 + tau * tau / 20.0)
 		var tilt := clampf((_t - T_PITCH) * 0.09, 0.0, 0.55)

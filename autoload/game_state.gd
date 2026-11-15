@@ -9,8 +9,8 @@ var design := MissionDesign.new()
 ## role -> player index; with one player everything points at 0
 var role_owner: Dictionary = {}
 var player_count := 1
-## hmm, keep the seed here so a replay with the same design gives the same run.
-## new_conditions draws another one.
+## Seed of the failure draw, kept for the whole mission so a redesign meets the
+## same failures. new_conditions draws another one.
 var run_seed := 0
 ## limiting factors the players expect, from Outcome.FACTORS; empty means "none"
 var prediction: Array[StringName] = []
@@ -34,6 +34,8 @@ var failure_mode := FailurePlan.Mode.TRAINING
 ## whether two flights met the same failures.
 var last_failures: Array[Dictionary] = []
 var previous_failures: Array[Dictionary] = []
+## scenario id -> true once its intro played this session. new_mission keeps it,
+## so the intro does not play again for a new flight of the same mission.
 var intros_seen := {}
 ## The design of last_result flown with its launch settings and no player changes.
 var baseline_result: RunResult

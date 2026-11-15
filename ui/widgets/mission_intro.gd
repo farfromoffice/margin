@@ -1,5 +1,8 @@
 class_name MissionIntro
 extends Control
+## A short opening for a mission, played over the briefing screen. It shows the
+## scenario's intro beats one at a time over a picture or the 3D Earth and waits
+## for the player.
 
 signal finished
 

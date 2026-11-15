@@ -190,7 +190,8 @@ static func smoke_trail(r: float) -> CPUParticles3D:
 
 
 ## Soft round billboard. Flames glow (unshaded, additive), smoke takes the sun.
-## hmm, the size lives on the quad: particle scale alone left them as specks
+## _puff_mesh builds one smoke puff. Its size is set on the quad since particle
+## scale alone left the puffs as specks.
 static func _puff_mesh(glowing: bool, size_m: float) -> QuadMesh:
 	var tex := GradientTexture2D.new()
 	tex.fill = GradientTexture2D.FILL_RADIAL

@@ -24,7 +24,8 @@ var _tally := {}
 
 
 func _process(_delta: float) -> bool:
-	# hmm, autoloads are only in the tree once the loop runs, not in _initialize
+	# autoloads join the tree only once the main loop runs and the sweep starts on
+	# the first frame instead of in _initialize.
 	if _started:
 		return true
 	_started = true

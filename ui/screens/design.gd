@@ -99,8 +99,8 @@ func _category_picker(cat: String) -> Control:
 		var id := StringName(str(c["id"]))
 		var b := _option_button("%s\n%s" % [c["name"], Explain.part_line(c)], group)
 		b.button_pressed = id == chosen
-		# hmm, switching inside a group also fires toggled(false) on the old one,
-		# possibly after the new one, so only clear if it is still the chosen part
+		# switching inside a group also fires toggled(false) on the old button,
+		# sometimes after the new one, so only clear a part that is still chosen.
 		b.toggled.connect(func(on: bool):
 			if on:
 				_pick(cat, id)

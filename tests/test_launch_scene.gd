@@ -28,7 +28,7 @@ func test_playing_through_reaches_orbit_with_wings_open() -> void:
 	var seen: Array[StringName] = []
 	s.milestone.connect(func(id): seen.append(id))
 	s.launch()
-	# hmm, drive the clock by hand, waiting 26 real seconds in a test is silly
+	# drive the clock by hand instead of waiting 26 real seconds for the sequence.
 	while seen.size() < LaunchScene.MILESTONES.size():
 		s._process(0.25)
 	assert_eq(seen, LaunchScene.MILESTONES)

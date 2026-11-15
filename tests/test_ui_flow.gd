@@ -501,6 +501,7 @@ func test_hang_points_at_its_restart() -> void:
 		assert_has(titles, "Restart radio" if kind == &"radio_hang" else "Restart camera")
 		button.pressed.emit()
 		assert_false(_tags(run).has(&"health"), "a restart already running is not marked again")
+		assert_false("Press Restart" in run._decision_todo.text, "nor told to press it again")
 
 
 func test_full_memory_with_the_radio_on_points_at_the_camera() -> void:

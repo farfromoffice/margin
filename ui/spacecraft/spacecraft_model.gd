@@ -194,8 +194,7 @@ func _build_inside(by_cat: Dictionary) -> void:
 # --- helpers -----------------------------------------------------------------
 
 ## Inside view is a cutaway: skins and end plates go, rails and parts stay.
-## hmm, per instance transparency would be nicer but the Compatibility
-## renderer ignores it, so hiding is the honest option.
+## The shell is hidden.
 func _apply_shell_alpha() -> void:
 	for m in _shell:
 		m.visible = not inside_view

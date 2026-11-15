@@ -388,7 +388,7 @@ func _tile(node_name: String, kicker: String, title: String, body: String, icon_
 	b.resized.connect(func(): b.pivot_offset = b.size / 2.0)
 	var refresh := _refresh_tile.bind(b, frame, art)
 	for sig in [b.mouse_entered, b.mouse_exited, b.focus_entered, b.focus_exited, b.button_down, b.button_up]:
-		# hmm, deferred because on mouse_exited the button still thinks it's hovered
+		# deferred, since during mouse_exited the button still reports itself hovered.
 		sig.connect(refresh.call_deferred)
 	refresh.call()
 	return b

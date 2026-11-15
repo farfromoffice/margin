@@ -472,7 +472,17 @@ func _auto_paused(fired: Array[StringName]) -> void:
 ## already running is no longer marked.
 func _fill_guidance() -> void:
 	var tags := _helpers(_broke, _fired)
-	var todo: Array = _broke.map(func(k): return Explain.failure_fix(k))
+	var s := _mission.state
+	# A hang that is restarting, or already cleared, needs no instruction any more.
+	# A weaker battery or solar array keeps its advice, nothing ends it.
+	var open := _broke.filter(func(k):
+		match k:
+			&"radio_hang":
+				return s.radio_hung and not _mission.is_cycling(Controls.RADIO_ENABLED)
+			&"instrument_hang":
+				return s.instrument_hung and not _mission.is_cycling(Controls.DUTY_CYCLE) and _mission.controls.duty_cycle > 0.0
+		return true)
+	var todo: Array = open.map(func(k): return Explain.failure_fix(k))
 	if not tags.is_empty():
 		var names := {&"camera": "camera", &"radio": "radio", &"health": "spacecraft health"}
 		var marked: Array = tags.keys().map(func(id): return "%s (%s)" % [names[id], tags[id].to_lower()])

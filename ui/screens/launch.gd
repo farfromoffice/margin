@@ -45,8 +45,8 @@ func _ready() -> void:
 		_skip.disabled = true
 		_ops.disabled = false)
 
-	# hmm, no full rect containers on top of the scene: they would eat the
-	# drag and wheel the camera needs, so every overlay is anchored on its own
+	# no full rect containers over the scene, they would take the drag and wheel
+	# the camera needs. Every overlay is anchored on its own.
 	var top := UiStyle.vbox(10)
 	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	top.position = Vector2(20, 20)
@@ -269,8 +269,8 @@ func _item(what: String, value: String, ok: bool, color := Color.TRANSPARENT) ->
 	return line
 
 
-## hmm, no timestamps on purpose: the sim starts in orbit and has no ascent
-## model, so any T+ seconds here would be made up.
+## _sequence returns the log line for each milestone. There are no timestamps:
+## the sim starts in orbit and has no ascent model, so T+ seconds would be made up.
 func _sequence(launcher: Dictionary, orbit: Dictionary) -> Dictionary:
 	var km := float(orbit.get("altitude_km", 0.0))
 	return {

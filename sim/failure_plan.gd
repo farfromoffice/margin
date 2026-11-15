@@ -28,8 +28,8 @@ static func generate(seed: int, duration_s: float, dt_s: float, entries: Array, 
 		return out
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed
-	# hmm, sort by id first, Catalog.all() comes from a Dictionary and the order
-	# must not depend on load order or the same seed draws different failures
+	# Sort by id first. Catalog.all() comes from a Dictionary and with another load
+	# order the same seed would draw different failures.
 	var pool := entries.duplicate()
 	pool.sort_custom(func(a, b): return str(a["id"]) < str(b["id"]))
 	var count := mini(rng.randi_range(COUNTS[mode][0], COUNTS[mode][1]), pool.size())

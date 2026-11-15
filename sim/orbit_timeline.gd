@@ -129,7 +129,8 @@ static func _build_contacts(orbit: Dictionary, station_ids: Array[StringName], d
 				starts.append(s)
 				ends.append(minf(float(w[1]) + offset, duration))
 			offset += reference
-	# hmm, sort indices instead of pairs so the floats never pass through Vector2
+	# Sort indices, not (start, end) pairs: a Vector2 holds 32 bit floats and would
+	# round times of a month in seconds.
 	var order := range(starts.size())
 	order.sort_custom(func(a, b): return starts[a] < starts[b])
 	var out := PackedFloat64Array()

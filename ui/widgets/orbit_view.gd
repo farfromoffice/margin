@@ -92,7 +92,8 @@ func _gui_input(event: InputEvent) -> void:
 			var step: float = -event.relative.x * DRAG_RAD_PER_PX
 			_earth_spin += step
 			_pitch = clampf(_pitch + event.relative.y * DRAG_RAD_PER_PX * 0.7, -MAX_PITCH, MAX_PITCH)
-			# hmm, velocity per event is noisy; one event is about one frame, good enough
+			# speed from one event is noisy but an event is about one frame, which is
+			# close enough for a fling.
 			_fling = clampf(step * Engine.get_frames_per_second(), -6.0, 6.0)
 			accept_event()
 

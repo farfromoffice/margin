@@ -46,9 +46,9 @@ func _draw() -> void:
 	if threshold >= 0.0:
 		var ty := _y(plot, threshold)
 		var line_color := Color(threshold_color, 0.9)
-		# width -1 draws a hairline, always one screen pixel.
-		# and a 1.0 wide line shrinks below a pixel in a window smaller than 1280x720,
-		#  vanishes at some heights. So a goal line that moves with the data blinks in and out.
+		# Width -1 draws a hairline, always one screen pixel. A 1.0 wide line shrinks
+		# below a pixel in a window smaller than 1280x720 and vanishes at some heights,
+		# so a goal line that moves with the data would blink in and out.
 		draw_dashed_line(Vector2(plot.position.x, ty), Vector2(plot.end.x, ty), line_color, -1.0, 6.0)
 		var text_size := font.get_string_size(threshold_label, HORIZONTAL_ALIGNMENT_LEFT, -1, 12)
 		var at := Vector2(plot.end.x - text_size.x - 4, ty - 4)
