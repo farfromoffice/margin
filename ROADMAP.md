@@ -56,8 +56,8 @@ Only after Phase 2 works end to end.
 ## Phase 5 · Submit (42 to 48 h)
 
 - [x] 30 second video, slides
-- [ ] Space Apps project page: summary, NASA resources used, AI disclosure
-- [ ] Submit (not in the last two hours)
+- [x] Space Apps project page: summary, NASA resources used, AI disclosure
+- [x] Submit (not in the last two hours)
 
 ## After the hackathon
 
