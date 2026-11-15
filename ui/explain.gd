@@ -251,10 +251,14 @@ static func failure_name(kind: StringName) -> String:
 	return str(Catalog.get_entry("failures", kind).get("name", kind))
 
 
-## What broke and what the player can do about it, for the pause banner.
-static func failure_alert(kind: StringName) -> String:
-	var e := Catalog.get_entry("failures", kind)
-	return "%s. %s %s" % [failure_name(kind), e.get("explain", ""), e.get("fix", "")]
+## What a failure did, from failures.json, for the pause panel.
+static func failure_explain(kind: StringName) -> String:
+	return str(Catalog.get_entry("failures", kind).get("explain", ""))
+
+
+## What the player can do about a failure, from failures.json.
+static func failure_fix(kind: StringName) -> String:
+	return str(Catalog.get_entry("failures", kind).get("fix", ""))
 
 
 ## Report lines for every failure of a run: when it struck, what it did, and
