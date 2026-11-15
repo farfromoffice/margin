@@ -40,8 +40,10 @@ var _decision_time: Label
 var _decision_todo: Label
 var _decision_facts: Label
 var _decision_outlook: Label
-## reasons of the open auto-pause, kept to refresh the panel when a control changes
+## reasons of the open auto-pause and the failures that struck with it, kept to
+## refresh the panel when a control changes
 var _fired: Array[StringName] = []
+var _broke: Array = []
 var _options: HFlowContainer
 var _log_parts: Array[Control] = []
 ## speed the clock goes back to after a decision
@@ -327,7 +329,9 @@ func _helpers(broke: Array, fired: Array[StringName]) -> Dictionary:
 		out[&"radio"] = "Off: saves power in passes"
 	if (memory or AutoPause.CONTACT_BEGIN in fired) and not c.radio_enabled and not s.radio_hung:
 		out[&"radio"] = "On: sends data home"
-	if s.radio_hung or (s.instrument_hung and c.duty_cycle > 0.0):
+	var radio_waits := s.radio_hung and not _mission.is_cycling(Controls.RADIO_ENABLED)
+	var camera_waits := s.instrument_hung and c.duty_cycle > 0.0 and not _mission.is_cycling(Controls.DUTY_CYCLE)
+	if radio_waits or camera_waits:
 		out[&"health"] = "Restart clears it"
 	return out
 
@@ -415,6 +419,8 @@ func _power_cycle(control: StringName) -> void:
 		_log_line(Explain.command(commands[i]) + " (power cycle)", UiStyle.CYAN)
 	_sync_controls()
 	_refresh_health()
+	if _decision.visible:
+		_fill_decision()
 
 
 func _auto_paused(fired: Array[StringName]) -> void:
@@ -438,20 +444,29 @@ func _auto_paused(fired: Array[StringName]) -> void:
 	var happened: Array = broke.map(func(k): return Explain.failure_explain(k)) + [Explain.pause_reasons(others)]
 	_banner.text = " ".join(happened).strip_edges()
 	_fired = fired
-	var tags := _helpers(broke, fired)
-	var todo: Array = broke.map(func(k): return Explain.failure_fix(k))
-	if not tags.is_empty():
-		var names := {&"camera": "camera", &"radio": "radio", &"health": "spacecraft health"}
-		var marked: Array = tags.keys().map(func(id): return "%s (%s)" % [names[id], tags[id].to_lower()])
-		todo.append("Marked on the right: %s." % ", ".join(marked))
-	_decision_todo.text = "What you can do: " + " ".join(todo) if not todo.is_empty() else ""
-	_decision_todo.visible = not todo.is_empty()
-	_mark(tags)
+	_broke = broke
 	_fill_decision()
 	_show_decision(true)
 	for f in fired:
 		_log_line("%s: paused, %s." % [Explain.mission_time(_mission.state.t_s), Explain.PAUSE_NAMES[f].to_lower()], UiStyle.WARN)
 	_update_forecast()
+
+
+## _fill_guidance marks the cards that can still help and writes what the player
+## can do, from the controls as they are now: a switch already made or a restart
+## already running is no longer marked.
+func _fill_guidance() -> void:
+	var tags := _helpers(_broke, _fired)
+	var todo: Array = _broke.map(func(k): return Explain.failure_fix(k))
+	if not tags.is_empty():
+		var names := {&"camera": "camera", &"radio": "radio", &"health": "spacecraft health"}
+		var marked: Array = tags.keys().map(func(id): return "%s (%s)" % [names[id], tags[id].to_lower()])
+		todo.append("Marked on the right: %s." % ", ".join(marked))
+	if todo.is_empty():
+		_decision_todo.text = "Nothing is left to change for this. Resume when ready."
+	else:
+		_decision_todo.text = "What you can do: " + " ".join(todo)
+	_mark(tags)
 
 
 ## _pause_icon picks the panel icon for what paused the clock: the part for a
@@ -472,6 +487,7 @@ func _pause_icon(broke: Array, others: Array) -> String:
 ## again whenever the player changes a control while paused, so trying a camera
 ## time shows its outcome before the clock runs.
 func _fill_decision() -> void:
+	_fill_guidance()
 	var now := _outlook(_mission.controls)
 	var facts := Explain.tradeoffs(_fired, now["forecast"], Warnings.camera_step(_mission.input, _mission.timeline))
 	_decision_facts.text = " ".join(facts)

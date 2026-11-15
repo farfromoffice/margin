@@ -407,6 +407,8 @@ func test_hang_points_at_its_restart() -> void:
 		assert_true(button.has_theme_stylebox_override("normal"), "and is marked as the recommended click")
 		var titles: Array = run._options.get_children().map(func(b): return b.text.get_slice("\n", 0))
 		assert_has(titles, "Restart radio" if kind == &"radio_hang" else "Restart camera")
+		button.pressed.emit()
+		assert_false(_tags(run).has(&"health"), "a restart already running is not marked again")
 
 
 func test_full_memory_with_the_radio_on_points_at_the_camera() -> void:
