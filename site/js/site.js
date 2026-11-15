@@ -45,8 +45,12 @@
 	const panel = document.getElementById("panel-loop");
 	const shot = panel && panel.querySelector("img");
 	const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+	let pendingSwap = 0;
 
 	function select(tab, focus) {
+		// a swap still fading out belongs to the old tab, drop it before anything else
+		clearTimeout(pendingSwap);
+		shot.classList.remove("is-swapping");
 		tabs.forEach((t) => {
 			const on = t === tab;
 			t.setAttribute("aria-selected", String(on));
@@ -62,7 +66,7 @@
 		};
 		if (reduce.matches) return swap();
 		shot.classList.add("is-swapping");
-		setTimeout(swap, 180);
+		pendingSwap = setTimeout(swap, 180);
 	}
 
 	tabs.forEach((tab, i) => {
